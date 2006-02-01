@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+CPAN=${CPAN:-"http://www.cpan.org"}
+packages=$HOME/.cpan/sources/modules/02packages.details.txt.gz
+
+mkdir -p $( dirname $packages )
+
+wget -N -O $packages $CPAN/modules/$( basename $packages )
+
+for module in "$@" ; do
+    tar=$( zgrep '^'$module' ' $packages | awk '{print $3}' )
+
+    if [ -z "$tar" ] ; then
+        echo "Can't find $module, skipping..." >&2
+        continue
+    fi
+
+    wget -N $CPAN/authors/id/$tar
+done
+
+# vi: set ai et:

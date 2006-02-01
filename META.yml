@@ -1,0 +1,22 @@
+---
+name: cpanspec
+version: 1.59
+author:
+  - Steven Pritchard <steve@cpan.org>
+abstract: ~
+license: perl
+requires:
+  Archive::Tar: 0
+  Archive::Zip: 0
+  File::Basename: 0
+  FileHandle: 0
+  Getopt::Long: 0
+  LWP::UserAgent: 0
+  Module::CoreList: 0
+  POSIX: 0
+  Parse::CPAN::Packages: 0
+  Pod::Usage: 0
+  Text::Autoformat: 0
+  YAML: 0
+provides: {}
+generated_by: Module::Build version 0.261
