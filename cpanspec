@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.1 2006/02/01 21:46:07 stevenpritchard Exp $
+# $Id: cpanspec,v 1.2 2006/02/02 14:48:55 stevenpritchard Exp $
 
 ####
 #
@@ -50,6 +50,7 @@ cpanspec [options] [file [...]]
  Options:
    --help       -h      Help message
    --old        -o      Be more compatible with old RHL/FC releases
+   --license    -l      Include generated license texts if absent in source
    --noprefix   -n      Don't add perl- prefix to package name
    --force      -f      Force overwriting existing spec
    --packager   -p      Name and email address of packager (for changelog)
@@ -92,7 +93,16 @@ Includes explicit dependencies for core Perl modules.
 
 Uses C<%check || :> instead of just C<%check>.
 
+=item *
+
+Includes a hack to remove LD_RUN_PATH from Makefile.
+
 =back
+
+=item B<-l>, B<--license>
+
+Generate COPYING and Artistic license texts if the source doesn't seem
+to include them.
 
 =item B<-n>, B<--noprefix>
 
@@ -175,6 +185,7 @@ our %opt;
 
 our $help=0;
 our $compat=0;
+our $license=0;
 our $noprefix=0;
 our $force=0;
 our $packager;
@@ -317,6 +328,7 @@ sub extract($$$) {
 GetOptions(
         'help|h'            => \$help,
         'old|o'             => \$compat,
+        'license|l'         => \$license,
         'noprefix|n'        => \$noprefix,
         'force|f'           => \$force,
         'packager|p=s'      => \$packager,
@@ -680,7 +692,7 @@ END
 
         print $spec
             "\%{__perl} -pi -e 's/^\\tLD_RUN_PATH=[^\\s]+\\s*/\\t/' Makefile\n"
-            if (!$noarch);
+            if ($compat and !$noarch);
 
         print $spec <<END;
 make \%{?_smp_mflags}
@@ -718,7 +730,7 @@ chmod -R u+rwX,go+rX,go-w \$RPM_BUILD_ROOT/*
 
 END
 
-    if (!grep /copying|artistic|copyright|license/i, @doc) {
+    if ($license and !grep /copying|artistic|copyright|license/i, @doc) {
         print $spec <<END;
 perldoc -t perlgpl > COPYING
 perldoc -t perlartistic > Artistic
