@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.2 2006/02/02 14:48:55 stevenpritchard Exp $
+# $Id: cpanspec,v 1.3 2006/02/03 20:51:01 stevenpritchard Exp $
 
 ####
 #
@@ -30,6 +30,8 @@
 #     - Download from CPAN automatically when executed as "cpanspec Foo::Bar".
 #       + DONE!
 #       + Add --download-only or something similar to replace cpanget.
+#
+#   * It would be useful to be able to write the spec to stdout.
 #
 # KNOWN BUGS:
 #
