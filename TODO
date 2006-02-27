@@ -1,0 +1,18 @@
+* FIXME - The script should make a pass through README to look for a
+          line that matches /^[^[:alnum:]]*DESCRIPTION[^[:alnum:]]*$/i
+          and use the first paragraph after that, if it exists.
+
+* It might be a good idea to try to render %description as POD.
+
+* Add code to get the path to the source from 02packages.details.txt.gz.
+
+* Planned features (as of 2005-09-19):
+
+  - Find and download dependencies automatically (like CPAN::Unwind).
+  - Download from CPAN automatically when executed as "cpanspec Foo::Bar".
+    + DONE!
+    + Add --download-only or something similar to replace cpanget.
+
+* It would be useful to be able to write the spec to stdout.
+
+* Add options to filter out Provides/Requires.

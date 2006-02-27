@@ -10,36 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.3 2006/02/03 20:51:01 stevenpritchard Exp $
-
-####
-#
-# TODO:
-#
-#   * FIXME - The script should make a pass through README to look for a
-#             line that matches /^[^[:alnum:]]*DESCRIPTION[^[:alnum:]]*$/i
-#             and use the first paragraph after that, if it exists.
-#
-#   * It might be a good idea to try to render %description as POD.
-#
-#   * Add code to get the path to the source from 02packages.details.txt.gz.
-#
-#   * Planned features (as of 2005-09-19):
-#
-#     - Find and download dependencies automatically (like CPAN::Unwind).
-#     - Download from CPAN automatically when executed as "cpanspec Foo::Bar".
-#       + DONE!
-#       + Add --download-only or something similar to replace cpanget.
-#
-#   * It would be useful to be able to write the spec to stdout.
-#
-# KNOWN BUGS:
-#
-#   * This script is known to fail on the following:
-#
-#       - Cache::Cache 1.02 (Tries to do detection magic in Makefile.PL.)
-#
-####
+# $Id: cpanspec,v 1.4 2006/02/27 18:28:09 stevenpritchard Exp $
 
 =head1 NAME
 

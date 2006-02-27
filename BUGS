@@ -1,0 +1,3 @@
+* This script is known to fail on the following:
+
+    - Cache::Cache 1.02 (Tries to do detection magic in Makefile.PL.)
