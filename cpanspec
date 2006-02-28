@@ -2,7 +2,7 @@
 #
 # cpanspec - Generate a spec file for a CPAN module
 #
-# Copyright (C) 2004-2005 Steven Pritchard <steve@kspei.com>
+# Copyright (C) 2004-2006 Steven Pritchard <steve@kspei.com>
 # This program is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.4 2006/02/27 18:28:09 stevenpritchard Exp $
+# $Id: cpanspec,v 1.5 2006/02/28 01:41:40 stevenpritchard Exp $
 
 =head1 NAME
 
@@ -158,7 +158,7 @@ our %opt;
 
 our $help=0;
 our $compat=0;
-our $license=0;
+our $addlicense=0;
 our $noprefix=0;
 our $force=0;
 our $packager;
@@ -301,7 +301,7 @@ sub extract($$$) {
 GetOptions(
         'help|h'            => \$help,
         'old|o'             => \$compat,
-        'license|l'         => \$license,
+        'license|l'         => \$addlicense,
         'noprefix|n'        => \$noprefix,
         'force|f'           => \$force,
         'packager|p=s'      => \$packager,
@@ -703,7 +703,7 @@ chmod -R u+rwX,go+rX,go-w \$RPM_BUILD_ROOT/*
 
 END
 
-    if ($license and !grep /copying|artistic|copyright|license/i, @doc) {
+    if ($addlicense and !grep /copying|artistic|copyright|license/i, @doc) {
         print $spec <<END;
 perldoc -t perlgpl > COPYING
 perldoc -t perlartistic > Artistic
