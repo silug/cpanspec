@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.5 2006/02/28 01:41:40 stevenpritchard Exp $
+# $Id: cpanspec,v 1.6 2006/03/03 01:08:21 stevenpritchard Exp $
 
 =head1 NAME
 
@@ -167,7 +167,8 @@ our $disttag='%{?dist}';
 our $buildsrpm=0;
 our $buildrpm=0;
 our $verbose=0;
-our $cpan=$ENV{'CPAN'} || "http://www.cpan.org/";
+our $source;
+our $cpan=$ENV{'CPAN'} || "http://www.cpan.org";
 
 our $home=$ENV{'HOME'} || (getpwuid($<))[7];
 die "Can't locate home directory.  Please define \$HOME.\n"
@@ -350,9 +351,9 @@ for my $file (@ARGV) {
             if (!defined($packages));
         my ($m,$d);
         if ($m=$packages->package($file) and $d=$m->distribution()) {
-            my $url=$cpan . "/authors/id/" . $d->prefix();
+            $source=$cpan . "/authors/id/" . $d->prefix();
             $file=$d->filename();
-            fetch($url, $file);
+            fetch($source, $file);
             $name=$d->dist();
             $version=$d->version();
             if ($file =~ /\.(tar)\.gz$/) {
@@ -403,11 +404,10 @@ for my $file (@ARGV) {
 
     my $url="http://search.cpan.org/dist/$name/";
 
-    my $vfile=$file;
-    $vfile=~s/$version/\%{version}/;
-    my $source="http://www.cpan.org/modules/by-module/"
+    $source=$source || "http://www.cpan.org/modules/by-module/"
         . ($module=~/::/ ? (split "::", $module)[0] : (split "-", $name)[0])
-        . "/" . $vfile;
+        . "/" . $file;
+    $source=~s/$version/\%{version}/;
 
     my $description;
     my $readme=(sort { $a cmp $b } (grep /README/i, @files))[0];
