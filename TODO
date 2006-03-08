@@ -4,8 +4,6 @@
 
 * It might be a good idea to try to render %description as POD.
 
-* Add code to get the path to the source from 02packages.details.txt.gz.
-
 * Planned features (as of 2005-09-19):
 
   - Find and download dependencies automatically (like CPAN::Unwind).
