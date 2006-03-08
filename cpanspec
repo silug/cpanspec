@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.6 2006/03/03 01:08:21 stevenpritchard Exp $
+# $Id: cpanspec,v 1.7 2006/03/08 02:01:13 stevenpritchard Exp $
 
 =head1 NAME
 
@@ -212,7 +212,8 @@ sub fetch($$) {
     }
 
     if ($response->is_success) {
-        my $fh=new FileHandle ">$file";
+        my $fh=new FileHandle ">$file"
+            or die "Can't write to $file: $!\n";
         print $fh $response->content;
         $fh->close();
 
@@ -352,7 +353,7 @@ for my $file (@ARGV) {
         my ($m,$d);
         if ($m=$packages->package($file) and $d=$m->distribution()) {
             $source=$cpan . "/authors/id/" . $d->prefix();
-            $file=$d->filename();
+            $file=basename($d->filename());
             fetch($source, $file);
             $name=$d->dist();
             $version=$d->version();
@@ -459,6 +460,8 @@ for my $file (@ARGV) {
     my $lib="\%{perl_$vendorlib}";
 
     my $specfile="$prefix$name.spec";
+    verbose "Writing $specfile...";
+
     my $spec;
     if ($force) {
         rename($specfile, "$specfile~") if (-e $specfile);
