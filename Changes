@@ -1,0 +1,11 @@
+0.61    2006-03-08
+
+* Add some command-line options:
+
+  --filter-requires    Specify Requires to remove
+  --filter-provides    Specify Provides to remove
+  --add-requires       Add Requires for this item
+  --add-provides       Add Provides for this item
+  --add-buildrequires  Add BuildRequires for this item
+
+# vi: set ai et:

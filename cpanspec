@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.7 2006/03/08 02:01:13 stevenpritchard Exp $
+# $Id: cpanspec,v 1.8 2006/03/09 14:52:15 stevenpritchard Exp $
 
 =head1 NAME
 
@@ -33,6 +33,13 @@ cpanspec [options] [file [...]]
    --build      -b      Build source and binary rpms
    --cpan       -c      CPAN mirror URL
    --verbose    -v      Be more verbose
+
+ Long options:
+   --filter-requires    Specify Requires to remove
+   --filter-provides    Specify Provides to remove
+   --add-requires       Add Requires for this item
+   --add-provides       Add Provides for this item
+   --add-buildrequires  Add BuildRequires for this item
 
 =head1 DESCRIPTION
 
@@ -124,6 +131,26 @@ B<CPAN> environment variable, defaults to L<http://www.cpan.org/>.
 
 Be more verbose.
 
+=item B<--filter-requires>
+
+Specify Requires to remove.
+
+=item B<--filter-provides>
+
+Specify Provides to remove.
+
+=item B<--add-requires>
+
+Add Requires for this item.
+
+=item B<--add-provides>
+
+Add Provides for this item.
+
+=item B<--add-buildrequires>
+
+Add BuildRequires for this item.
+
 =back
 
 =head1 AUTHOR
@@ -178,6 +205,12 @@ our $pkgdetails="$home/.cpan/sources/modules/02packages.details.txt.gz";
 our $updated=0;
 
 our $packages;
+
+our @filter_requires;
+our @filter_provides;
+our @add_requires;
+our @add_provides;
+our @add_buildrequires;
 
 sub verbose(@) {
     print STDERR @_, "\n" if ($verbose);
@@ -313,6 +346,11 @@ GetOptions(
         'build|b'           => \$buildrpm,
         'cpan|c=s'          => \$cpan,
         'verbose|v'         => \$verbose,
+        'filter-requires=s' => \@filter_requires,
+        'filter-provides=s' => \@filter_provides,
+        'add-requires=s'    => \@add_requires,
+        'add-provides=s'    => \@add_provides,
+        'add-buildrequires=s' => \@add_buildrequires,
     ) or pod2usage({ -exitval => 1, -verbose => 0 });
 
 pod2usage({ -exitval => 0, -verbose => 1 }) if ($help);
@@ -458,6 +496,50 @@ for my $file (@ARGV) {
     my $noarch=!grep /\.(c|xs)$/i, @files;
     my $vendorlib=($noarch ? "vendorlib" : "vendorarch");
     my $lib="\%{perl_$vendorlib}";
+
+    if (@filter_requires) {
+        my $script="$name-filter-requires.sh";
+        verbose "Writing $script...";
+        my $sh;
+        if ($force) {
+            rename($script, "$script~") if (-e $script);
+            $sh=new FileHandle ">$script";
+        } else {
+            $sh=new FileHandle $script, O_WRONLY|O_CREAT|O_EXCL;
+        }
+        die "Failed to create $script: $!\n" if (!$sh);
+
+        print $sh "#!/bin/sh\n\n"
+            . "\@\@PERL_REQ\@\@ \"\$\@\" | sed -e '/^$filter_requires[0]\$/d'";
+        if (@filter_requires > 1) {
+            for my $dep (@filter_requires[1..$#filter_requires]) {
+                print $sh " \\\n    -e '/^$dep\$/d'";
+            }
+        }
+        print $sh "\n";
+    }
+
+    if (@filter_provides) {
+        my $script="$name-filter-provides.sh";
+        verbose "Writing $script...";
+        my $sh;
+        if ($force) {
+            rename($script, "$script~") if (-e $script);
+            $sh=new FileHandle ">$script";
+        } else {
+            $sh=new FileHandle $script, O_WRONLY|O_CREAT|O_EXCL;
+        }
+        die "Failed to create $script: $!\n" if (!$sh);
+
+        print $sh "#!/bin/sh\n\n"
+            . "\@\@PERL_PROV\@\@ \"\$\@\" | sed -e '/^$filter_provides[0]\$/d'";
+        if (@filter_provides > 1) {
+            for my $dep (@filter_provides[1..$#filter_provides]) {
+                print $sh " \\\n    -e '/^$dep\$/d'";
+            }
+        }
+        print $sh "\n";
+    }
 
     my $specfile="$prefix$name.spec";
     verbose "Writing $specfile...";
@@ -637,6 +719,10 @@ END
         print $spec "\n";
     }
 
+    for my $dep (@add_buildrequires) {
+        printf $spec "%-16s%s\n", "BuildRequires:", $dep;
+    }
+
     for my $module (sort(keys(%requires))) {
         next if (!$compat and exists($Module::CoreList::version{$]}{$module}));
         printf $spec "%-16s%s", "Requires:", "perl($module)";
@@ -644,14 +730,62 @@ END
         print $spec "\n";
     }
 
+    for my $dep (@add_requires) {
+        printf $spec "%-16s%s\n", "Requires:", $dep;
+    }
+
     print $spec <<END;
 Requires:       perl(:MODULE_COMPAT_\%(eval "`\%{__perl} -V:version`"; echo \$version))
+END
+
+    for my $prov (@add_provides) {
+        printf $spec "%-16s%s\n", "Provides:", $prov;
+    }
+
+    if (@filter_requires) {
+        print $spec <<END
+
+Source98:       $name-filter-requires.sh
+\%global real_perl_requires \%{__perl_requires}
+\%define __perl_requires \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-requires
+END
+    }
+
+    if (@filter_provides) {
+        print $spec <<END
+
+Source99:      $name-filter-provides.sh
+\%global real_perl_provides \%{__perl_provides}
+\%define __perl_provides \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-provides
+END
+    }
+
+    print $spec <<END;
 
 \%description
 $description
 
 \%prep
 \%setup -q@{[($noprefix ? "" : " -n $name-\%{version}")]}
+END
+
+    if (@filter_requires) {
+        print $spec <<'END';
+
+sed -e 's,@@PERL_REQ@@,%{real_perl_requires},' %{SOURCE98} > %{__perl_requires}
+chmod +x %{__perl_requires}
+END
+    }
+
+    if (@filter_provides) {
+        print $spec <<'END';
+
+sed -e 's,@@PERL_PROV@@,%{real_perl_provides},' %{SOURCE99} > %{__perl_provides}
+chmod +x %{__perl_provides}
+END
+    }
+
+    print $spec <<END;
 
 \%build
 END
@@ -728,7 +862,9 @@ END
     print $spec <<END;
 
 \%clean
-rm -rf \$RPM_BUILD_ROOT
+rm -rf \$RPM_BUILD_ROOT@{[
+    (@filter_requires ? ' %{__perl_requires}' : '') .
+    (@filter_provides ? ' %{__perl_provides}' : '')]}
 
 \%files
 \%defattr(-,root,root,-)

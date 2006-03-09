@@ -14,3 +14,4 @@
 * It would be useful to be able to write the spec to stdout.
 
 * Add options to filter out Provides/Requires.
+  - Done, but the documentation needs work.
