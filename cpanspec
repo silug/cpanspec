@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.8 2006/03/09 14:52:15 stevenpritchard Exp $
+# $Id: cpanspec,v 1.9 2006/03/09 21:21:19 stevenpritchard Exp $
 
 =head1 NAME
 
@@ -425,7 +425,7 @@ for my $file (@ARGV) {
     
     my $bogus=0;
     for my $entry (list_files($archive, $type)) {
-        if ($entry !~ /^(?:.\/)?$name-$version\//) {
+        if ($entry !~ /^(?:.\/)?$name-$version(?:\/|$)/) {
             warn "BOGUS PATH DETECTED: $entry\n";
             $bogus++;
             next;

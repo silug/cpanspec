@@ -1,5 +1,6 @@
 0.61    2006-03-08
 
+* Add this file.
 * Add some command-line options:
 
   --filter-requires    Specify Requires to remove
@@ -7,5 +8,8 @@
   --add-requires       Add Requires for this item
   --add-provides       Add Provides for this item
   --add-buildrequires  Add BuildRequires for this item
+
+* Fix path check to allow for a directory without a trailing /.
+  (Found in Module::Install 0.59.)
 
 # vi: set ai et:
