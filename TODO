@@ -15,3 +15,5 @@
 
 * Add options to filter out Provides/Requires.
   - Done, but the documentation needs work.
+
+* Get Summary using Parse::CPAN::Modlist from 03modlist.data.gz.
