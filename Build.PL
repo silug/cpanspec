@@ -13,6 +13,7 @@ my $builder = Module::Build->new(
         'File::Basename'        => 0,
         'FileHandle'            => 0,
         'Getopt::Long'          => 0,
+        'locale'                => 0,
         'LWP::UserAgent'        => 0,
         'Module::CoreList'      => 0,
         'POSIX'                 => 0,
