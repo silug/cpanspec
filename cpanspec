@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.10 2006/03/11 18:24:45 stevenpritchard Exp $
+# $Id: cpanspec,v 1.11 2006/03/11 18:35:39 stevenpritchard Exp $
 
 my $NAME="cpanspec";
 my $VERSION='1.61';
@@ -178,6 +178,7 @@ use FileHandle;
 use Archive::Tar;
 use Archive::Zip qw(:ERROR_CODES);
 use POSIX;
+use locale;
 use Text::Autoformat;
 use YAML qw(Load);
 use Module::CoreList;
@@ -345,6 +346,11 @@ sub extract($$$) {
         return $archive->contents($filename);
     }
 }
+
+# Set locale to en_US.UTF8 so that dates in changelog will be correct
+# if using another locale. Also ensures writing out UTF8. (Thanks to
+# Roy-Magne Mo for pointing out the problem and providing a solution.)
+setlocale(LC_ALL, "en_US.UTF-8");
 
 GetOptions(
         'help|h'            => \$help,
