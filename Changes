@@ -8,6 +8,7 @@
   --add-requires       Add Requires for this item
   --add-provides       Add Provides for this item
   --add-buildrequires  Add BuildRequires for this item
+  --version            Print the version and exit
 
 * Fix path check to allow for a directory without a trailing /.
   (Found in Module::Install 0.59.)
