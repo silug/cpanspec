@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.11 2006/03/11 18:35:39 stevenpritchard Exp $
+# $Id: cpanspec,v 1.12 2006/03/22 21:50:38 stevenpritchard Exp $
 
 my $NAME="cpanspec";
-my $VERSION='1.61';
+my $VERSION='1.62';
 
 =head1 NAME
 
@@ -347,6 +347,30 @@ sub extract($$$) {
     }
 }
 
+sub get_description(%) {
+    my %args=@_;
+
+    my $readme=(sort { $a cmp $b } (grep /README/i, @{$args{files}}))[0];
+    if ($readme) {
+        if (my $content=extract($args{archive}, $args{type},
+                "$args{name}-$args{version}/$readme")) {
+            $content=~s/\r//g; # Why people use DOS text, I'll never understand.
+            for my $string (split "\n\n", $content) {
+                $string=~s/^\n+//;
+                if ((my @tmp=split "\n", $string) > 2
+                    and $string !~ /^[#\-=]/) {
+                    return $string;
+                }
+            }
+        } else {
+            warn "Failed to read $readme from $args{filename}"
+                . ($args{type} eq 'tar' ? (": " . $args{archive}->error()) : "") . "\n";
+        }
+    }
+
+    return undef;
+}
+
 # Set locale to en_US.UTF8 so that dates in changelog will be correct
 # if using another locale. Also ensures writing out UTF8. (Thanks to
 # Roy-Magne Mo for pointing out the problem and providing a solution.)
@@ -468,24 +492,14 @@ for my $file (@ARGV) {
         . "/" . $file;
     $source=~s/$version/\%{version}/;
 
-    my $description;
-    my $readme=(sort { $a cmp $b } (grep /README/i, @files))[0];
-    if ($readme) {
-        if (my $content=extract($archive, $type, "$name-$version/$readme")) {
-            $content=~s/\r//g; # Why people use DOS text, I'll never understand.
-            for my $string (split "\n\n", $content) {
-                $string=~s/^\n+//;
-                if ((my @tmp=split "\n", $string) > 2
-                    and $string !~ /^[#\-=]/) {
-                    $description=$string;
-                    last;
-                }
-            }
-        } else {
-            warn "Failed to read $readme from $file"
-                . ($type eq 'tar' ? (": " . $archive->error()) : "") . "\n";
-        }
-    }
+    my $description=get_description(
+            archive => $archive,
+            type => $type,
+            filename => $file,
+            name => $name,
+            version => $version,
+            files => \@files,
+        );
 
     if (defined($description) and $description) {
         $description=autoformat $description, { "all"     => 1,
