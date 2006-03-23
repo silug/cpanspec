@@ -1,3 +1,7 @@
+0.62
+
+* Improve auto-detection of %description and Summary.
+
 0.61    2006-03-11
 
 * Add this file.

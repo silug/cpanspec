@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.12 2006/03/22 21:50:38 stevenpritchard Exp $
+# $Id: cpanspec,v 1.13 2006/03/23 01:57:12 stevenpritchard Exp $
 
 my $NAME="cpanspec";
 my $VERSION='1.62';
@@ -187,6 +187,7 @@ use Pod::Usage;
 use File::Basename;
 use LWP::UserAgent;
 use Parse::CPAN::Packages;
+use Pod::Simple::TextContent;
 # Apparently gets pulled in by another module.
 #use Cwd;
 
@@ -349,9 +350,53 @@ sub extract($$$) {
 
 sub get_description(%) {
     my %args=@_;
+    my $pm="";
+    my ($summary, $description);
 
-    my $readme=(sort { $a cmp $b } (grep /README/i, @{$args{files}}))[0];
-    if ($readme) {
+    my $path=$args{module};
+    $path=~s,::,/,g;
+    my @pmfiles=("$args{name}-$args{version}/lib/$path.pm");
+    do {
+        push(@pmfiles, "$args{name}-$args{version}/$path.pm");
+    } while ($path=~s,^[^/]+/,,);
+    push(@pmfiles, "$args{name}-$args{version}/$args{module}")
+        if ($args{module} !~ /::/);
+
+    for my $file (@pmfiles) {
+        $pm=(grep { $_ eq $file or $_ eq "./$file" }
+            list_files($args{archive}, $args{type}))[0];
+        last if $pm;
+    }
+
+    if ($pm) {
+        verbose "Trying to fetch description from $pm...";
+
+        if (my $content=extract($args{archive}, $args{type}, $pm)) {
+            my $parser=Pod::Simple::TextContent->new()
+                or die "Pod::Simple::TextContent->new() failed: $!\n";
+            $parser->no_whining(1);
+            my $rendered="";
+            $parser->output_string(\$rendered);
+            $parser->parse_string_document($content);
+            if ($parser->content_seen and $rendered) {
+                if ($rendered=~/DESCRIPTION\s+(\S.*?)\n\n/s) {
+                    $description=$1;
+                }
+                if ($rendered=~/NAME\s*$args{module}\s[-\s]*(\S[^\n]*)/s) {
+                    $summary=$1;
+                }
+                return($description, $summary) if (defined($description));
+            }
+        } else {
+            warn "Failed to read $pm from $args{filename}"
+                . ($args{type} eq 'tar'
+                    ? (": " . $args{archive}->error()) : "") . "\n";
+        }
+    }
+
+    if (my $readme=(sort { $a cmp $b } (grep /README/i, @{$args{files}}))[0]) {
+        verbose "Trying to fetch description from $readme...";
+
         if (my $content=extract($args{archive}, $args{type},
                 "$args{name}-$args{version}/$readme")) {
             $content=~s/\r//g; # Why people use DOS text, I'll never understand.
@@ -359,16 +404,17 @@ sub get_description(%) {
                 $string=~s/^\n+//;
                 if ((my @tmp=split "\n", $string) > 2
                     and $string !~ /^[#\-=]/) {
-                    return $string;
+                    return($string, undef);
                 }
             }
         } else {
             warn "Failed to read $readme from $args{filename}"
-                . ($args{type} eq 'tar' ? (": " . $args{archive}->error()) : "") . "\n";
+                . ($args{type} eq 'tar'
+                    ? (": " . $args{archive}->error()) : "") . "\n";
         }
     }
 
-    return undef;
+    return(undef, undef);
 }
 
 # Set locale to en_US.UTF8 so that dates in changelog will be correct
@@ -492,13 +538,14 @@ for my $file (@ARGV) {
         . "/" . $file;
     $source=~s/$version/\%{version}/;
 
-    my $description=get_description(
-            archive => $archive,
-            type => $type,
-            filename => $file,
-            name => $name,
-            version => $version,
-            files => \@files,
+    my ($description,$summary)=get_description(
+            archive     => $archive,
+            type        => $type,
+            filename    => $file,
+            name        => $name,
+            module      => $module,
+            version     => $version,
+            files       => \@files,
         );
 
     if (defined($description) and $description) {
@@ -511,6 +558,8 @@ for my $file (@ARGV) {
     } else {
         $description="$module Perl module";
     }
+
+    $summary="$module Perl module" if (!defined($summary));
 
     my @doc=sort { $a cmp $b } grep {
                 !/\//
@@ -719,7 +768,7 @@ for my $file (@ARGV) {
 Name:           $prefix$name
 Version:        $version
 Release:        $release$disttag
-Summary:        $module Perl module
+Summary:        $summary
 License:        $license
 Group:          Development/Libraries
 URL:            $url
