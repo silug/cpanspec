@@ -17,3 +17,6 @@
   - Done, but the documentation needs work.
 
 * Get Summary using Parse::CPAN::Modlist from 03modlist.data.gz.
+
+  - I'm not sure this is necessary now that we pull the information
+    from the module itself.
