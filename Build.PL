@@ -18,10 +18,10 @@ my $builder = Module::Build->new(
         'Module::CoreList'              => 0,
         'POSIX'                         => 0,
         'Parse::CPAN::Packages'         => 0,
+        'Pod::Simple::TextContent'      => 0,
         'Pod::Usage'                    => 0,
         'Text::Autoformat'              => 0,
         'YAML'                          => 0,
-        'Pod::Simple::TextContent'      => 0,
     },
     script_files => [
         'cpanspec',

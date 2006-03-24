@@ -1,13 +1,13 @@
-0.63
+1.63    2006-03-24
 
 * Look in $name.pod for %description and Summary also.
 * Avoid useless "Summary: SYNOPSIS".
 
-0.62    2006-03-22
+1.62    2006-03-22
 
 * Improve auto-detection of %description and Summary.
 
-0.61    2006-03-11
+1.61    2006-03-11
 
 * Add this file.
 * Add some command-line options:
