@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.13 2006/03/23 01:57:12 stevenpritchard Exp $
+# $Id: cpanspec,v 1.14 2006/03/24 01:07:23 stevenpritchard Exp $
 
 my $NAME="cpanspec";
-my $VERSION='1.62';
+my $VERSION='1.63';
 
 =head1 NAME
 
@@ -355,9 +355,11 @@ sub get_description(%) {
 
     my $path=$args{module};
     $path=~s,::,/,g;
-    my @pmfiles=("$args{name}-$args{version}/lib/$path.pm");
+    my @pmfiles=("$args{name}-$args{version}/lib/$path.pod",
+        "$args{name}-$args{version}/lib/$path.pm");
     do {
-        push(@pmfiles, "$args{name}-$args{version}/$path.pm");
+        push(@pmfiles, "$args{name}-$args{version}/$path.pod",
+            "$args{name}-$args{version}/$path.pm");
     } while ($path=~s,^[^/]+/,,);
     push(@pmfiles, "$args{name}-$args{version}/$args{module}")
         if ($args{module} !~ /::/);
@@ -383,7 +385,7 @@ sub get_description(%) {
                     $description=$1;
                 }
                 if ($rendered=~/NAME\s*$args{module}\s[-\s]*(\S[^\n]*)/s) {
-                    $summary=$1;
+                    $summary=$1 if ($1 ne "SYNOPSIS");
                 }
                 return($description, $summary) if (defined($description));
             }
