@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.14 2006/03/24 01:07:23 stevenpritchard Exp $
+# $Id: cpanspec,v 1.15 2006/03/24 19:38:24 stevenpritchard Exp $
 
 my $NAME="cpanspec";
-my $VERSION='1.63';
+my $VERSION='1.64';
 
 =head1 NAME
 
@@ -708,7 +708,7 @@ for my $file (@ARGV) {
     if (grep /^Build\.PL$/, @files) {
         # FIXME - I need to figure out how to parse Build.PL.
         $build_requires{'Module::Build'}=0;
-        $usebuildpl=1 if (!grep /^Makefile\.PL$/, @files);
+        $usebuildpl=1;
     }
 
     if (!$usebuildpl) {

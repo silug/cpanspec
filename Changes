@@ -1,3 +1,7 @@
+1.64
+
+* If there is a Build.PL and a Makefile.PL, use Build.PL.
+
 1.63    2006-03-24
 
 * Look in $name.pod for %description and Summary also.
