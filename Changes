@@ -1,5 +1,6 @@
 1.64
 
+* Look a couple more places for %description/Summary.
 * Avoid adding common directories to @doc.
 * If there is a Build.PL and a Makefile.PL, use Build.PL.
 

@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.16 2006/03/24 19:52:38 stevenpritchard Exp $
+# $Id: cpanspec,v 1.17 2006/03/24 20:43:18 stevenpritchard Exp $
 
 my $NAME="cpanspec";
 my $VERSION='1.64';
@@ -357,6 +357,12 @@ sub get_description(%) {
     $path=~s,::,/,g;
     my @pmfiles=("$args{name}-$args{version}/lib/$path.pod",
         "$args{name}-$args{version}/lib/$path.pm");
+    if ($args{module} =~ /::/) {
+        my @tmp=split '/', $path;
+        my $last=pop @tmp;
+        push(@pmfiles, "$args{name}-$args{version}/lib/$last.pod",
+            "$args{name}-$args{version}/lib/$last.pm");
+    }
     do {
         push(@pmfiles, "$args{name}-$args{version}/$path.pod",
             "$args{name}-$args{version}/$path.pm");
