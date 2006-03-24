@@ -1,5 +1,6 @@
 1.64
 
+* Avoid adding common directories to @doc.
 * If there is a Build.PL and a Makefile.PL, use Build.PL.
 
 1.63    2006-03-24

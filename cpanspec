@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.15 2006/03/24 19:38:24 stevenpritchard Exp $
+# $Id: cpanspec,v 1.16 2006/03/24 19:52:38 stevenpritchard Exp $
 
 my $NAME="cpanspec";
 my $VERSION='1.64';
@@ -574,6 +574,10 @@ for my $file (@ARGV) {
             and $_ ne "META.yml"
             and $_ ne "configure"
             and $_ ne "typemap"
+            and $_ ne "$name-$version"
+            and $_ ne "bin"
+            and $_ ne "lib"
+            and $_ ne "t"
             } @files;
 
     my $date=strftime("%a %b %d %Y", localtime);
