@@ -1,4 +1,4 @@
-1.64
+1.64    2006-03-24
 
 * Look a couple more places for %description/Summary.
 * Avoid adding common directories to @doc.
