@@ -4,3 +4,6 @@
 
 * PAR 0.92 is arch-specific because of stuff in %{_bindir}, not
   %{perl_vendorarch}.  There's probably a way to detect that.
+
+* There is logic to exclude directories from %doc, but it doesn't
+  seem to work all that often.

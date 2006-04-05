@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.17 2006/03/24 20:43:18 stevenpritchard Exp $
+# $Id: cpanspec,v 1.18 2006/04/05 01:08:46 stevenpritchard Exp $
 
 my $NAME="cpanspec";
-my $VERSION='1.64';
+my $VERSION='1.65';
 
 =head1 NAME
 
@@ -584,6 +584,7 @@ for my $file (@ARGV) {
             and $_ ne "bin"
             and $_ ne "lib"
             and $_ ne "t"
+            and $_ ne "inc"
             } @files;
 
     my $date=strftime("%a %b %d %Y", localtime);
