@@ -1,6 +1,7 @@
 1.65
 
 * Exclude inc (suggested by Ian Burrell).
+* Capitalize $summary.
 
 1.64    2006-03-24
 
