@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.20 2006/04/10 21:01:52 stevenpritchard Exp $
+# $Id: cpanspec,v 1.21 2006/04/22 00:10:14 stevenpritchard Exp $
 
 my $NAME="cpanspec";
 my $VERSION='1.65';
@@ -893,7 +893,7 @@ END
 
     if ($usebuildpl) {
         print $spec <<END;
-perl Build.PL installdirs=vendor@{[$noarch ? '' : ' optimize="$RPM_OPT_FLAGS"']}
+\%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : ' optimize="$RPM_OPT_FLAGS"']}
 ./Build
 END
     } else {

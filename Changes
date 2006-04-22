@@ -2,6 +2,7 @@
 
 * Exclude inc (suggested by Ian Burrell).
 * Massage $summary (capitalize, remove trailing ".", remove leading "A").
+* Use %{__perl} instead of just "perl" when running Build.PL.
 
 1.64    2006-03-24
 
