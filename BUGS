@@ -7,3 +7,6 @@
 
 * There is logic to exclude directories from %doc, but it doesn't
   seem to work all that often.
+
+* Scripts aren't added to %files reliably.  Man pages for scripts are
+  never added.
