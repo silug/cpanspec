@@ -1,4 +1,4 @@
-1.65
+1.65    2006-04-26
 
 * Exclude inc (suggested by Ian Burrell).
 * Massage $summary (capitalize, remove trailing ".", remove leading "A").

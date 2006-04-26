@@ -3,10 +3,10 @@ use warnings;
 use Module::Build;
 
 my $builder = Module::Build->new(
-    module_name         => 'cpanspec',
+    dist_name           => 'cpanspec',
     license             => 'perl',
     dist_author         => 'Steven Pritchard <steve@cpan.org>',
-    dist_version        => '1.65',
+    dist_version_from   => 'cpanspec',
     requires => {
         'Archive::Tar'                  => 0,
         'Archive::Zip'                  => 0,
