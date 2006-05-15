@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.24 2006/05/05 22:01:04 stevenpritchard Exp $
+# $Id: cpanspec,v 1.25 2006/05/15 23:32:46 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.66';
@@ -31,6 +31,7 @@ cpanspec [options] [file [...]]
    --force      -f      Force overwriting existing spec
    --packager   -p      Name and email address of packager (for changelog)
    --release    -r      Release of package (defaults to 1)
+   --epoch      -e      Epoch of package
    --disttag    -d      Disttag (defaults to %{?dist})
    --srpm       -s      Build a source rpm
    --build      -b      Build source and binary rpms
@@ -108,6 +109,11 @@ macro in C<~/.rpmmacros>.
 =item B<-r>, B<--release>
 
 The release number of the package.  Defaults to 1.
+
+=item B<-e>, B<--epoch>
+
+The epoch number of the package.  By default, this is undefined, so
+no epoch will be used in the generated spec.
 
 =item B<-d>, B<--disttag>
 
@@ -200,6 +206,7 @@ our $noprefix=0;
 our $force=0;
 our $packager;
 our $release=1;
+our $epoch;
 our $disttag='%{?dist}';
 our $buildsrpm=0;
 our $buildrpm=0;
@@ -443,6 +450,7 @@ GetOptions(
         'force|f'           => \$force,
         'packager|p=s'      => \$packager,
         'release|r=i'       => \$release,
+        'epoch|e=i'         => \$epoch,
         'disttag|d=s'       => \$disttag,
         'srpm|s'            => \$buildsrpm,
         'build|b'           => \$buildrpm,
@@ -788,6 +796,11 @@ for my $file (@ARGV) {
 Name:           $prefix$name
 Version:        $packageversion
 Release:        $release$disttag
+END
+
+    print $spec "Epoch:          $epoch\n" if (defined($epoch));
+
+    print $spec <<END;
 Summary:        $summary
 License:        $license
 Group:          Development/Libraries

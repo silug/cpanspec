@@ -2,6 +2,7 @@
 
 * Fix $summary modification.
 * Strip leading [Vv]\.? from spec Version.
+* Add --epoch option.
 
 1.65    2006-04-26
 
