@@ -1,4 +1,4 @@
-1.66
+1.66    2006-05-16
 
 * Fix $summary modification.
 * Strip leading [Vv]\.? from spec Version.
