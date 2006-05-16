@@ -4,6 +4,10 @@
 * Strip leading [Vv]\.? from spec Version.
 * Add --epoch option.
 * rpm is in /bin, not /usr/bin.
+* Update list of licenses, and fix some to agree with rpmlint.
+* Use "$dep" instead of "$module" in a lot of loops to not conflict
+  with $module that stores the name of the module we're working on.
+* Add --follow and some simple code to fetch build dependencies.
 
 1.65    2006-04-26
 

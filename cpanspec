@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.26 2006/05/16 00:12:03 stevenpritchard Exp $
+# $Id: cpanspec,v 1.27 2006/05/16 22:55:45 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.66';
@@ -39,6 +39,7 @@ cpanspec [options] [file [...]]
    --verbose    -v      Be more verbose
 
  Long options:
+   --follow             Process build dependencies
    --filter-requires    Specify Requires to remove
    --filter-provides    Specify Provides to remove
    --add-requires       Add Requires for this item
@@ -141,6 +142,10 @@ B<CPAN> environment variable, defaults to L<http://www.cpan.org/>.
 
 Be more verbose.
 
+=item B<--follow>
+
+Add build dependencies to the list of modules to process.
+
 =item B<--filter-requires>
 
 Specify Requires to remove.
@@ -211,6 +216,7 @@ our $disttag='%{?dist}';
 our $buildsrpm=0;
 our $buildrpm=0;
 our $verbose=0;
+our $follow=0;
 our $source;
 our $cpan=$ENV{'CPAN'} || "http://www.cpan.org";
 
@@ -437,6 +443,45 @@ sub get_description(%) {
     return(undef, undef);
 }
 
+sub check_rpm($) {
+    my $dep=shift;
+
+    my $rpm="/bin/rpm";
+    return undef if (!-x $rpm);
+
+    my @out=`$rpm -q --whatprovides "$dep"`;
+
+    if ($? != 0) {
+        #warn "backtick (rpm) failed with return value $?";
+        return undef;
+    }
+
+    return @out;
+}
+
+sub check_repo($) {
+    my $dep=shift;
+
+    my $repoquery="/usr/bin/repoquery";
+    return undef if (!-x $repoquery);
+
+    verbose("Running $repoquery to check for $dep.  This may take a while...");
+    my @out=`$repoquery --whatprovides "$dep"`;
+
+    if ($? != 0) {
+        #warn "backtick (repoquery) failed with return value $?";
+        return undef;
+    }
+
+    return @out;
+}
+
+sub check_dep($) {
+    my $module=shift;
+
+    return (check_rpm("perl($module)") || check_repo("perl($module)"));
+}
+
 # Set locale to en_US.UTF8 so that dates in changelog will be correct
 # if using another locale. Also ensures writing out UTF8. (Thanks to
 # Roy-Magne Mo for pointing out the problem and providing a solution.)
@@ -456,6 +501,7 @@ GetOptions(
         'build|b'           => \$buildrpm,
         'cpan|c=s'          => \$cpan,
         'verbose|v'         => \$verbose,
+        'follow'            => \$follow,
         'filter-requires=s' => \@filter_requires,
         'filter-provides=s' => \@filter_provides,
         'add-requires=s'    => \@add_requires,
@@ -466,6 +512,12 @@ GetOptions(
 
 pod2usage({ -exitval => 0, -verbose => 1 }) if ($help);
 pod2usage({ -exitval => 1, -verbose => 0 }) if (!@ARGV);
+
+if ($follow and $buildrpm) {
+    warn "Sorry, --follow and --build are mutually exclusive right now.\n"
+        . "We can't build when tracking deps right now.  Ignoring --build.\n";
+    $buildrpm=0;
+}
 
 my $prefix=$noprefix ? "" : "perl-";
 
@@ -481,7 +533,10 @@ if (!$packager or $packager eq "\%packager") {
 die "Module::CoreList does not support perl version $]!\n"
     if (!exists($Module::CoreList::version{$]}));
 
-for my $file (@ARGV) {
+my @args=@ARGV;
+my @processed=();
+
+for my $file (@args) {
     my ($name,$version,$type);
 
     if ($file =~ /^(.*)-([^-]+)\.(tar)\.gz$/) {
@@ -682,9 +737,9 @@ for my $file (@ARGV) {
         %build_requires=%{$meta->{build_requires}} if ($meta->{build_requires});
         %requires=%{$meta->{requires}} if ($meta->{requires});
         if ($meta->{recommends}) {
-            for my $module (keys(%{$meta->{recommends}})) {
-                $requires{$module}=$requires{$module}
-                    || $meta->{recommends}->{$module};
+            for my $dep (keys(%{$meta->{recommends}})) {
+                $requires{$dep}=$requires{$dep}
+                    || $meta->{recommends}->{$dep};
             }
         }
 
@@ -694,35 +749,44 @@ for my $file (@ARGV) {
         }
 
         if ($meta->{license}) {
+            # This list of licenses is from the Module::Build::API
+            # docs, cross referenced with the list of licenses in
+            # /usr/share/rpmlint/config.
             if ($meta->{license} eq "perl") {
                 $license="GPL or Artistic";
-            } elsif ($meta->{license} eq "gpl") {
-                $license="GPL";
-            } elsif ($meta->{license} eq "lgpl") {
-                $license="LGPL";
+            } elsif ($meta->{license} eq "apache") {
+                $license="Apache Software License";
             } elsif ($meta->{license} eq "artistic") {
                 $license="Artistic";
             } elsif ($meta->{license} eq "bsd") {
                 $license="BSD";
+            } elsif ($meta->{license} eq "gpl") {
+                $license="GPL";
+            } elsif ($meta->{license} eq "lgpl") {
+                $license="LGPL";
+            } elsif ($meta->{license} eq "mit") {
+                $license="MIT";
+            } elsif ($meta->{license} eq "mozilla") {
+                $license="MPL";
             } elsif ($meta->{license} eq "open_source") {
                 $license="OSI-Approved"; # rpmlint will complain
             } elsif ($meta->{license} eq "unrestricted") {
-                $license="distributable"; # rpmlint should complain
+                $license="Distributable";
             } elsif ($meta->{license} eq "restrictive") {
-                $license="Proprietary";
+                $license="Non-distributable";
                 warn "License is 'restrictive'."
                     . "  This package should not be redistributed.\n";
             } else {
                 warn "Unknown license '" . $meta->{license} . "'!\n";
-                $license="CHECK(distributable)";
+                $license="CHECK(Distributable)";
             }
         }
     }
 
     if (my @licenses=grep /license|copyright|copying/i, @doc) {
         if (!$license) {
-            $license="distributable, see @licenses";
-        } elsif ($license=~/^(OSI-Approved|distributable|Proprietary)$/) {
+            $license="Distributable, see @licenses";
+        } elsif ($license=~/^(OSI-Approved|Distributable|Non-distributable)$/) {
             $license.=", see @licenses";
         }
     }
@@ -751,10 +815,10 @@ for my $file (@ARGV) {
                     # Versioned BuildRequires aren't reliably honored by
                     # rpmbuild, but we'll include them anyway as a hint to the
                     # packager.
-                    for my $module (keys(%{$args{'PREREQ_PM'}})) {
-                        print "BuildRequires: $module";
-                        print " " . $args{'PREREQ_PM'}->{$module}
-                            if ($args{'PREREQ_PM'}->{$module});
+                    for my $dep (keys(%{$args{'PREREQ_PM'}})) {
+                        print "BuildRequires: $dep";
+                        print " " . $args{'PREREQ_PM'}->{$dep}
+                            if ($args{'PREREQ_PM'}->{$dep});
                         print "\n";
                     }
                 }
@@ -781,10 +845,10 @@ for my $file (@ARGV) {
         } else {
             while (<CHILD>) {
                 if (/^BuildRequires:\s*(\S+)\s*(\S+)?/) {
-                    my $module=$1;
+                    my $dep=$1;
                     my $version=0;
                     $version=$2 if (defined($2));
-                    $build_requires{$module}=$version;
+                    $build_requires{$dep}=$version;
                 }
             }
         }
@@ -823,15 +887,26 @@ END
         delete $build_requires{perl};
     }
 
-    for my $module (keys(%requires)) {
-        $build_requires{$module}=$build_requires{$module} || $requires{$module};
+    for my $dep (keys(%requires)) {
+        $build_requires{$dep}=$build_requires{$dep} || $requires{$dep};
     }
 
-    for my $module (sort(keys(%build_requires))) {
-        next if (!$compat and exists($Module::CoreList::version{$]}{$module}));
-        printf $spec "%-16s%s", "BuildRequires:", "perl($module)";
-        print $spec (" >= " . $build_requires{$module})
-            if ($build_requires{$module});
+    for my $dep (sort(keys(%build_requires))) {
+        if (exists($Module::CoreList::version{$]}{$dep})) {
+            next if (!$compat);
+        } elsif ($follow) {
+            if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
+                if (check_dep($dep)) {
+                    verbose("$dep is available, skipping.");
+                } else {
+                    verbose("$dep is not available, adding it to the list.");
+                    push(@args, $dep);
+                }
+            }
+        }
+        printf $spec "%-16s%s", "BuildRequires:", "perl($dep)";
+        print $spec (" >= " . $build_requires{$dep})
+            if ($build_requires{$dep});
         print $spec "\n";
     }
 
@@ -839,10 +914,10 @@ END
         printf $spec "%-16s%s\n", "BuildRequires:", $dep;
     }
 
-    for my $module (sort(keys(%requires))) {
-        next if (!$compat and exists($Module::CoreList::version{$]}{$module}));
-        printf $spec "%-16s%s", "Requires:", "perl($module)";
-        print $spec (" >= " . $requires{$module}) if ($requires{$module});
+    for my $dep (sort(keys(%requires))) {
+        next if (!$compat and exists($Module::CoreList::version{$]}{$dep}));
+        printf $spec "%-16s%s", "Requires:", "perl($dep)";
+        print $spec (" >= " . $requires{$dep}) if ($requires{$dep});
         print $spec "\n";
     }
 
@@ -1009,6 +1084,8 @@ END
     $spec->close();
 
     build_rpm($specfile) if ($buildsrpm or $buildrpm);
+
+    push(@processed, $module);
 }
 
 # vi: set ai et:
