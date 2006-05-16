@@ -22,3 +22,6 @@
     from the module itself.
 
 * Do a better job of detecting scripts in the package.
+
+* Check the search path for rpm, rpmbuild, etc. instead of hard-coding
+  paths.

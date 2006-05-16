@@ -3,6 +3,7 @@
 * Fix $summary modification.
 * Strip leading [Vv]\.? from spec Version.
 * Add --epoch option.
+* rpm is in /bin, not /usr/bin.
 
 1.65    2006-04-26
 
