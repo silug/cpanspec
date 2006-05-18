@@ -25,3 +25,6 @@
 
 * Check the search path for rpm, rpmbuild, etc. instead of hard-coding
   paths.
+
+* Try to get cpan_home from CPAN::MyConfig or CPAN::Config instead of
+  hard-coding $pkgdetails.
