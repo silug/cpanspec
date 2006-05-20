@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.27 2006/05/16 22:55:45 stevenpritchard Exp $
+# $Id: cpanspec,v 1.28 2006/05/20 21:19:38 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.66';
+our $VERSION='1.67';
 
 =head1 NAME
 
@@ -646,6 +646,7 @@ for my $file (@args) {
             and $_ ne "INSTALL"
             and $_ ne "SIGNATURE"
             and $_ ne "META.yml"
+            and $_ ne "NINJA"
             and $_ ne "configure"
             and $_ ne "typemap"
             and $_ ne "$name-$version"
