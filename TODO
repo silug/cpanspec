@@ -28,3 +28,5 @@
 
 * Try to get cpan_home from CPAN::MyConfig or CPAN::Config instead of
   hard-coding $pkgdetails.
+
+* Add an option to honor %_sourcedir and such.
