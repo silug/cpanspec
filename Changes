@@ -1,6 +1,7 @@
 1.67
 
 * Exclude NINJA.
+* Do a case-insensitive match on the possible licenses.
 
 1.66    2006-05-16
 

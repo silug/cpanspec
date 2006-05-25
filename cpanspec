@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.28 2006/05/20 21:19:38 stevenpritchard Exp $
+# $Id: cpanspec,v 1.29 2006/05/25 00:33:47 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.67';
@@ -753,27 +753,27 @@ for my $file (@args) {
             # This list of licenses is from the Module::Build::API
             # docs, cross referenced with the list of licenses in
             # /usr/share/rpmlint/config.
-            if ($meta->{license} eq "perl") {
+            if ($meta->{license} =~ /^perl$/i) {
                 $license="GPL or Artistic";
-            } elsif ($meta->{license} eq "apache") {
+            } elsif ($meta->{license} =~ /^apache$/i) {
                 $license="Apache Software License";
-            } elsif ($meta->{license} eq "artistic") {
+            } elsif ($meta->{license} =~ /^artistic$/i) {
                 $license="Artistic";
-            } elsif ($meta->{license} eq "bsd") {
+            } elsif ($meta->{license} =~ /^bsd$/i) {
                 $license="BSD";
-            } elsif ($meta->{license} eq "gpl") {
+            } elsif ($meta->{license} =~ /^gpl$/i) {
                 $license="GPL";
-            } elsif ($meta->{license} eq "lgpl") {
+            } elsif ($meta->{license} =~ /^lgpl$/i) {
                 $license="LGPL";
-            } elsif ($meta->{license} eq "mit") {
+            } elsif ($meta->{license} =~ /^mit$/i) {
                 $license="MIT";
-            } elsif ($meta->{license} eq "mozilla") {
+            } elsif ($meta->{license} =~ /^mozilla$/i) {
                 $license="MPL";
-            } elsif ($meta->{license} eq "open_source") {
+            } elsif ($meta->{license} =~ /^open_source$/i) {
                 $license="OSI-Approved"; # rpmlint will complain
-            } elsif ($meta->{license} eq "unrestricted") {
+            } elsif ($meta->{license} =~ /^unrestricted$/i) {
                 $license="Distributable";
-            } elsif ($meta->{license} eq "restrictive") {
+            } elsif ($meta->{license} =~ /^restrictive$/i) {
                 $license="Non-distributable";
                 warn "License is 'restrictive'."
                     . "  This package should not be redistributed.\n";
