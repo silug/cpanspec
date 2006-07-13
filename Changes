@@ -1,8 +1,9 @@
-1.67
+1.67    2006-07-13
 
 * Exclude NINJA.
 * Do a case-insensitive match on the possible licenses.
 * Add a patch from Ian Burrell to support .tgz archives.
+* Handle files that aren't in the current directory properly.
 
 1.66    2006-05-16
 

@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.30 2006/07/01 23:16:09 stevenpritchard Exp $
+# $Id: cpanspec,v 1.31 2006/07/13 21:57:16 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.67';
@@ -539,15 +539,15 @@ my @processed=();
 for my $file (@args) {
     my ($name,$version,$type);
 
-    if ($file =~ /^(.*)-([^-]+)\.(tar)\.gz$/) {
+    if ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.(tar)\.gz$/) {
         $name=$1;
         $version=$2;
         $type=$3;
-    } elsif ($file =~ /^(.*)-([^-]+)\.tgz$/) {
+    } elsif ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.tgz$/) {
         $name=$1;
         $version=$2;
         $type = 'tar';
-    } elsif ($file =~ /^(.*)-([^-]+)\.(zip)$/) {
+    } elsif ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.(zip)$/) {
         $name=$1;
         $version=$2;
         $type=$3;
@@ -567,6 +567,8 @@ for my $file (@args) {
             $version=$d->version();
             if ($file =~ /\.(tar)\.gz$/) {
                 $type=$1;
+            } elsif ($file =~ /\.tgz$/) {
+                $type='tar';
             } elsif ($file =~ /\.(zip)$/) {
                 $type=$1;
             } else {
@@ -615,7 +617,7 @@ for my $file (@args) {
 
     $source=$source || "http://www.cpan.org/modules/by-module/"
         . ($module=~/::/ ? (split "::", $module)[0] : (split "-", $name)[0])
-        . "/" . $file;
+        . "/" . basename($file);
     $source=~s/$version/\%{version}/;
 
     my ($description,$summary)=get_description(
