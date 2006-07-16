@@ -1,12 +1,5 @@
-* FIXME - The script should make a pass through README to look for a
-          line that matches /^[^[:alnum:]]*DESCRIPTION[^[:alnum:]]*$/i
-          and use the first paragraph after that, if it exists.
-
-* It might be a good idea to try to render %description as POD.
-
 * Planned features (as of 2005-09-19):
 
-  - Find and download dependencies automatically (like CPAN::Unwind).
   - Download from CPAN automatically when executed as "cpanspec Foo::Bar".
     + DONE!
     + Add --download-only or something similar to replace cpanget.
@@ -15,11 +8,6 @@
 
 * Add options to filter out Provides/Requires.
   - Done, but the documentation needs work.
-
-* Get Summary using Parse::CPAN::Modlist from 03modlist.data.gz.
-
-  - I'm not sure this is necessary now that we pull the information
-    from the module itself.
 
 * Do a better job of detecting scripts in the package.
 
