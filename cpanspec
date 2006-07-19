@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.32 2006/07/19 17:11:11 stevenpritchard Exp $
+# $Id: cpanspec,v 1.33 2006/07/19 17:11:34 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.67';
+our $VERSION='1.68';
 
 =head1 NAME
 
