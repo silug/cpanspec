@@ -1,6 +1,7 @@
 * This script is known to fail on the following:
 
     - Cache::Cache 1.02 (Tries to do detection magic in Makefile.PL.)
+    - perlmenu 4.0 (*horrible* file name, paths in the tar file, etc.)
 
 * PAR 0.92 is arch-specific because of stuff in %{_bindir}, not
   %{perl_vendorarch}.  There's probably a way to detect that.
