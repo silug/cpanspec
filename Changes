@@ -1,3 +1,8 @@
+1.68
+
+* Fix find option ordering (patch from Ville Skyttä, #199442).
+* Random documentation updates.
+
 1.67    2006-07-13
 
 * Exclude NINJA.
