@@ -2,6 +2,7 @@
 
 * Exclude autobuild.sh.
 * Change regex to also drop leading "an" from Summary.
+* Tiny whitespace fix.
 
 1.68    2006-07-20
 

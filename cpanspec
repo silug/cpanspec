@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.35 2006/08/29 00:40:02 stevenpritchard Exp $
+# $Id: cpanspec,v 1.36 2006/09/04 01:02:17 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.69';
@@ -953,7 +953,7 @@ END
     if (@filter_provides) {
         print $spec <<END
 
-Source99:      $name-filter-provides.sh
+Source99:       $name-filter-provides.sh
 \%global real_perl_provides \%{__perl_provides}
 \%define __perl_provides \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-provides
 END
