@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.36 2006/09/04 01:02:17 stevenpritchard Exp $
+# $Id: cpanspec,v 1.37 2006/09/04 19:38:23 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.69';
@@ -407,7 +407,7 @@ sub get_description(%) {
                     if ($1 ne "SYNOPSIS") {
                         $summary=$1;
                         $summary=~s/[.\s]+$//;
-                        $summary=~s/^An?\s+//i;
+                        $summary=~s/^(?:An?|The)\s+//i;
                         $summary=ucfirst($summary);
                     }
                 }
