@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.39 2006/10/03 18:04:46 stevenpritchard Exp $
+# $Id: cpanspec,v 1.40 2006/10/03 18:12:37 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.69';
@@ -143,6 +143,11 @@ B<CPAN> environment variable, defaults to L<http://www.cpan.org/>.
 
 Be more verbose.
 
+=item B<-m>, B<--prefer-macros>
+
+Prefer the macro form of common spec constructs over the environment variable
+form (e.g. %{buildroot} vs $RPM_BUILD_ROOT).
+
 =item B<--follow>
 
 Add build dependencies to the list of modules to process.
@@ -167,12 +172,7 @@ Add Provides for this item.
 
 Add BuildRequires for this item.
 
-=item B<-m>, B<--prefer-macros>
-
-Prefer the macro form of common spec constructs over the environment variable
-form (e.g. %{buildroot} vs $RPM_BUILD_ROOT).
-
-=item B<-V>, B<--version>
+=item B<--version>
 
 Print the version number and exit.
 

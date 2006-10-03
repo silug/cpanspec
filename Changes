@@ -5,6 +5,8 @@
 * Tiny whitespace fix.
 * Add patch from Chris Weyl to add --prefer-macros and handle modules
   specified as Foo-Bar instead of Foo::Bar (SF#1546966).
+* Originally -V was going to be the same as --version, but for some
+  reason it doesn't really work.  The documentation has been updated.
 
 1.68    2006-07-20
 
