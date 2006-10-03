@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.37 2006/09/04 19:38:23 stevenpritchard Exp $
+# $Id: cpanspec,v 1.38 2006/10/03 17:58:44 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.69';
@@ -37,6 +37,7 @@ cpanspec [options] [file [...]]
    --build      -b      Build source and binary rpms
    --cpan       -c      CPAN mirror URL
    --verbose    -v      Be more verbose
+   --prefer-macros  -m  Prefer macros over environment variables in the spec
 
  Long options:
    --follow             Process build dependencies
@@ -166,6 +167,11 @@ Add Provides for this item.
 
 Add BuildRequires for this item.
 
+=item B<-m>, B<--prefer-macros>
+
+Prefer the macro form of common spec constructs over the environment variable
+form (e.g. %{buildroot} vs $RPM_BUILD_ROOT).
+
 =item B<-V>, B<--version>
 
 Print the version number and exit.
@@ -217,6 +223,7 @@ our $buildsrpm=0;
 our $buildrpm=0;
 our $verbose=0;
 our $follow=0;
+our $macros=0;
 our $source;
 our $cpan=$ENV{'CPAN'} || "http://www.cpan.org";
 
@@ -234,6 +241,25 @@ our @filter_provides;
 our @add_requires;
 our @add_provides;
 our @add_buildrequires;
+
+# env. vars and their macro analogues
+my @MACROS => (
+
+    # 0 is for the full expansions....
+    {
+        'optimize'  => '$RPM_OPT_FLAGS',
+        'buildroot' => '$RPM_BUILD_ROOT',
+    },
+
+    # 1 is for the macros.
+    {
+        'optimize'  => '%{optimize}',
+        'buildroot' => '%{buildroot}',
+    },
+);
+
+# this is set after the parameters are passed
+our %macro;
 
 sub print_version {
     print "$NAME version $VERSION\n";
@@ -508,6 +534,7 @@ GetOptions(
         'add-provides=s'    => \@add_provides,
         'add-buildrequires=s' => \@add_buildrequires,
         'version'           => \&print_version,
+        'prefer-macros|m'   => \$macros,
     ) or pod2usage({ -exitval => 1, -verbose => 0 });
 
 pod2usage({ -exitval => 0, -verbose => 1 }) if ($help);
@@ -518,6 +545,8 @@ if ($follow and $buildrpm) {
         . "We can't build when tracking deps right now.  Ignoring --build.\n";
     $buildrpm=0;
 }
+
+%macro = %{ $MACROS[$macros] };
 
 my $prefix=$noprefix ? "" : "perl-";
 
@@ -552,6 +581,10 @@ for my $file (@args) {
         $version=$2;
         $type=$3;
     } else {
+        
+        # keep things happy if we get "Foo-Bar" instead of "Foo::Bar"
+        $file =~ s/-/::/g;
+
         # Look up $file in 02packages.details.txt.
         update_packages();
         $packages=Parse::CPAN::Packages->new($pkgdetails)
@@ -991,12 +1024,12 @@ END
 
     if ($usebuildpl) {
         print $spec <<END;
-\%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : ' optimize="$RPM_OPT_FLAGS"']}
+\%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
 ./Build
 END
     } else {
         print $spec <<END;
-\%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : ' OPTIMIZE="$RPM_OPT_FLAGS"']}
+\%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"}]}
 END
 
         print $spec
@@ -1011,31 +1044,31 @@ END
     print $spec <<END;
 
 \%install
-rm -rf \$RPM_BUILD_ROOT
+rm -rf $macro{buildroot}
 
 END
 
     if ($usebuildpl) {
         print $spec
-            "./Build install destdir=\$RPM_BUILD_ROOT create_packlist=0\n";
+            "./Build install destdir=$macro{buildroot} create_packlist=0\n";
     } else {
         print $spec <<END;
-make pure_install PERL_INSTALL_ROOT=\$RPM_BUILD_ROOT
+make pure_install PERL_INSTALL_ROOT=$macro{buildroot}
 
-find \$RPM_BUILD_ROOT -type f -name .packlist -exec rm -f {} \\;
+find $macro{buildroot} -type f -name .packlist -exec rm -f {} \\;
 END
     }
 
     if (!$noarch) {
         print $spec <<END;
-find \$RPM_BUILD_ROOT -type f -name '*.bs' -size 0 -exec rm -f {} \\;
+find $macro{buildroot} -type f -name '*.bs' -size 0 -exec rm -f {} \\;
 END
 }
 
     print $spec <<END;
-find \$RPM_BUILD_ROOT -depth -type d -exec rmdir {} 2>/dev/null \\;
+find $macro{buildroot} -depth -type d -exec rmdir {} 2>/dev/null \\;
 
-chmod -R u+rwX,go+rX,go-w \$RPM_BUILD_ROOT/*
+\%{_fixperms} $macro{buildroot}/*
 
 END
 
@@ -1061,7 +1094,7 @@ END
     print $spec <<END;
 
 \%clean
-rm -rf \$RPM_BUILD_ROOT@{[
+rm -rf $macro{buildroot}@{[
     (@filter_requires ? ' %{__perl_requires}' : '') .
     (@filter_provides ? ' %{__perl_provides}' : '')]}
 
