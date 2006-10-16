@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.40 2006/10/03 18:12:37 stevenpritchard Exp $
+# $Id: cpanspec,v 1.41 2006/10/16 22:32:31 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.69';
+our $VERSION='1.69.1';
 
 =head1 NAME
 
@@ -1029,7 +1029,7 @@ END
 END
     } else {
         print $spec <<END;
-\%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"}]}
+\%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : qq{ OPTIMIZE="$macro{optimize}"}]}
 END
 
         print $spec

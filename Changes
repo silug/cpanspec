@@ -1,3 +1,7 @@
+1.69.1  2006-10-16
+
+* Oops, it's "OPTIMIZE", not "optimize", when running Makefile.PL.
+
 1.69    2006-10-03
 
 * Exclude autobuild.sh.
