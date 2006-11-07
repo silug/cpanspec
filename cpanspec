@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.41 2006/10/16 22:32:31 stevenpritchard Exp $
+# $Id: cpanspec,v 1.42 2006/11/07 20:51:12 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.69.1';
+our $VERSION='1.70';
 
 =head1 NAME
 
@@ -694,6 +694,7 @@ for my $file (@args) {
             and $_ ne "t"
             and $_ ne "inc"
             and $_ ne "autobuild.sh"
+            and $_ ne "pm_to_blib"
             } @files;
 
     my $date=strftime("%a %b %d %Y", localtime);
@@ -1014,6 +1015,13 @@ END
 
 sed -e 's,@@PERL_PROV@@,%{real_perl_provides},' %{SOURCE99} > %{__perl_provides}
 chmod +x %{__perl_provides}
+END
+    }
+
+    if (grep { $_ eq "pm_to_blib" } @files) {
+        print $spec <<'END';
+
+rm -f pm_to_blib
 END
     }
 
