@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.42 2006/11/07 20:51:12 stevenpritchard Exp $
+# $Id: cpanspec,v 1.43 2006/11/09 20:49:30 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.70';
@@ -967,9 +967,11 @@ END
         printf $spec "%-16s%s\n", "Requires:", $dep;
     }
 
-    print $spec <<END;
+    if (!$compat) {
+        print $spec <<END;
 Requires:       perl(:MODULE_COMPAT_\%(eval "`\%{__perl} -V:version`"; echo \$version))
 END
+    }
 
     for my $prov (@add_provides) {
         printf $spec "%-16s%s\n", "Provides:", $prov;
