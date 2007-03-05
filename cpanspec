@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.43 2006/11/09 20:49:30 stevenpritchard Exp $
+# $Id: cpanspec,v 1.44 2007/03/05 18:23:36 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.70';
@@ -678,7 +678,7 @@ for my $file (@args) {
 
     my @doc=sort { $a cmp $b } grep {
                 !/\//
-            and !/\.(pl|xs|h|c|pm|in|pod)$/i
+            and !/\.(pl|xs|h|c|pm|in|pod|cfg)$/i
             and !/^\./
             and $_ ne "MANIFEST"
             and $_ ne "MANIFEST.SKIP"
