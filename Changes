@@ -1,4 +1,4 @@
-1.70
+1.70    2007-03-12
 
 * Delete pm_to_blib if it exists.
 * Don't include the MODULE_COMPAT magic with --old.
