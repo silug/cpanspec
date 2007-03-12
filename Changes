@@ -1,3 +1,7 @@
+1.71
+
+* It's 2007 now, so update the copyright.
+
 1.70    2007-03-12
 
 * Delete pm_to_blib if it exists.
