@@ -3,6 +3,7 @@
 * Delete pm_to_blib if it exists.
 * Don't include the MODULE_COMPAT magic with --old.
 * Exclude *.cfg from %doc.
+* Add BuildRequires: perl(ExtUtils::MakeMaker) when using Makefile.PL.
 
 1.69.1  2006-10-16
 

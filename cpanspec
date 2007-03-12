@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.44 2007/03/05 18:23:36 stevenpritchard Exp $
+# $Id: cpanspec,v 1.45 2007/03/12 23:00:19 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.70';
@@ -836,9 +836,10 @@ for my $file (@args) {
 
     my $usebuildpl=0;
     if (grep /^Build\.PL$/, @files) {
-        # FIXME - I need to figure out how to parse Build.PL.
         $build_requires{'Module::Build'}=0;
         $usebuildpl=1;
+    } else {
+        $build_requires{'ExtUtils::MakeMaker'}=0;
     }
 
     if (!$usebuildpl) {
@@ -935,7 +936,7 @@ END
 
     for my $dep (sort(keys(%build_requires))) {
         if (exists($Module::CoreList::version{$]}{$dep})) {
-            next if (!$compat);
+            next if (!$compat and $dep ne "ExtUtils::MakeMaker");
         } elsif ($follow) {
             if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
                 if (check_dep($dep)) {
