@@ -10,6 +10,7 @@ my $builder = Module::Build->new(
     requires => {
         'Archive::Tar'                  => 0,
         'Archive::Zip'                  => 0,
+        'IO::Uncompress::Bunzip2'       => 0,
         'File::Basename'                => 0,
         'FileHandle'                    => 0,
         'Getopt::Long'                  => 0,

@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.46 2007/03/12 23:28:50 stevenpritchard Exp $
+# $Id: cpanspec,v 1.47 2007/03/16 18:16:02 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.71';
@@ -568,7 +568,7 @@ my @processed=();
 for my $file (@args) {
     my ($name,$version,$type);
 
-    if ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.(tar)\.gz$/) {
+    if ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.(tar)\.(?:gz|bz2)$/) {
         $name=$1;
         $version=$2;
         $type=$3;
@@ -619,7 +619,25 @@ for my $file (@args) {
 
     my $archive;
     if ($type eq 'tar') {
-        $archive=Archive::Tar->new($file, 1)
+        my $f=$file;
+        if ($file=~/\.bz2$/) {
+            eval {
+                use IO::Uncompress::Bunzip2;
+            };
+
+            if ($@) {
+                warn "Failed to load IO::Uncompress::Bunzip2: $@\n";
+                warn "Skipping $file...\n";
+                next;
+            }
+
+            $f=IO::Uncompress::Bunzip2->new($file);
+            if (!defined($f)) {
+                warn "IO::Uncompress::Bunzip2->new() failed on $file: $!\n";
+                next;
+            }
+        }
+        $archive=Archive::Tar->new($f, 1)
             or die "Archive::Tar->new() failed: $!\n";
     } elsif ($type eq 'zip') {
         $archive=Archive::Zip->new() or die "Archive::Zip->new() failed: $!\n";
