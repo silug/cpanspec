@@ -2,6 +2,8 @@
 
 * It's 2007 now, so update the copyright.
 * Handle .bz2 files.
+* Exclude config.guess, config.sub, and install.sh (usually seen near
+  configure.)
 
 1.70    2007-03-12
 
