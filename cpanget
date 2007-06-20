@@ -5,9 +5,57 @@ set -e
 CPAN=${CPAN:-"http://www.cpan.org"}
 packages=$HOME/.cpan/sources/modules/02packages.details.txt.gz
 
+quiet=''
+only_url=0
+
+help() {
+    cat <<END
+Usage: $( basename $0 ) [options] [module [module [...]]]
+
+Options:
+
+    -h          Print this message
+    -n          Don't download, only print URLs
+    -q          Work quietly
+
+END
+}
+
+for n in "$@" ; do
+    if [ "$( echo '' "$n" | sed 's/^ //;s/^\(.\).*$/\1/' )" = "-" ] ; then
+        shift
+        for arg in $( echo '' "$n" | sed 's/^ //;s/^-//;s/./ &/g' ) ; do
+            case $arg in
+                [h?])
+                    help
+                    exit 0
+                    ;;
+                n)
+                    only_url=1
+                    ;;
+                q)
+                    quiet='-q'
+                    ;;
+                *)
+                    echo "Unknown option '$arg'."
+                    help
+                    exit 1
+                    ;;
+            esac
+        done
+    else
+        break
+    fi
+done
+
+if [ $# -eq 0 ] ; then
+    help
+    exit 1
+fi
+
 mkdir -p $( dirname $packages )
 
-wget -N -O $packages $CPAN/modules/$( basename $packages )
+wget $quiet -N -O $packages $CPAN/modules/$( basename $packages )
 
 for module in "$@" ; do
     tar=$( zgrep '^'$module' ' $packages | awk '{print $3}' )
@@ -17,7 +65,11 @@ for module in "$@" ; do
         continue
     fi
 
-    wget -N $CPAN/authors/id/$tar
+    if [ $only_url -eq 0 ] ; then
+        wget $quiet -N $CPAN/authors/id/$tar
+    else
+        echo "$module: $CPAN/authors/id/$tar"
+    fi
 done
 
 # vi: set ai et:

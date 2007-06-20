@@ -4,6 +4,11 @@
 * Handle .bz2 files.
 * Exclude config.guess, config.sub, and install.sh (usually seen near
   configure.)
+* Add option processing to cpanget.  It now accepts the following options:
+
+  -h          Print usage message
+  -n          Don't download, only print URLs
+  -q          Work quietly
 
 1.70    2007-03-12
 
