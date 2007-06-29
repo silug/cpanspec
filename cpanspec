@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.48 2007/05/25 00:54:59 stevenpritchard Exp $
+# $Id: cpanspec,v 1.49 2007/06/29 18:31:32 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.71';
+our $VERSION='1.72';
 
 =head1 NAME
 
@@ -121,7 +121,7 @@ no epoch will be used in the generated spec.
 
 Disttag (a string to append to the release number), used to
 differentiate builds for various releases.  Defaults to the
-semi-standard (for Fedora Extras) string C<%{?dist}>.
+semi-standard (for Fedora) string C<%{?dist}>.
 
 =item B<-s>, B<--srpm>
 
@@ -347,7 +347,7 @@ sub build_rpm($) {
 
     verbose("Building " . ($buildrpm ? "rpms" : "source rpm") . " from $spec");
 
-    # From Fedora Extras Makefile.common.
+    # From Fedora CVS Makefile.common.
     if (system($rpm, "--define", "_sourcedir $dir",
                      "--define", "_builddir $dir",
                      "--define", "_srcrpmdir $dir",
