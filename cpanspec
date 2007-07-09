@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.49 2007/06/29 18:31:32 stevenpritchard Exp $
+# $Id: cpanspec,v 1.50 2007/07/09 19:03:51 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.72';
@@ -499,7 +499,7 @@ sub check_repo($) {
         return undef;
     }
 
-    return @out;
+    return grep { !/^Loading.*plugin$/ } @out;
 }
 
 sub check_dep($) {

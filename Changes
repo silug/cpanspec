@@ -1,6 +1,7 @@
 1.72
 
 * Get rid of the word "Extras".
+* Filter out "Loading ... plugin" when running repoquery.
 
 1.71    2007-06-29
 

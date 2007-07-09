@@ -2,6 +2,7 @@
 
     - Cache::Cache 1.02 (Tries to do detection magic in Makefile.PL.)
     - perlmenu 4.0 (*horrible* file name, paths in the tar file, etc.)
+    - Mail-SPF-v2.005.tar.gz ("v" in version number and path in the tar file)
 
 * PAR 0.92 is arch-specific because of stuff in %{_bindir}, not
   %{perl_vendorarch}.  There's probably a way to detect that.
