@@ -2,6 +2,7 @@
 
 * Get rid of the word "Extras".
 * Filter out "Loading ... plugin" when running repoquery.
+* Properly handle "requires: perl: 0" in META.yml.
 
 1.71    2007-06-29
 

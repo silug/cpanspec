@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.50 2007/07/09 19:03:51 stevenpritchard Exp $
+# $Id: cpanspec,v 1.51 2007/07/10 15:29:34 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.72';
@@ -939,12 +939,12 @@ END
 
     printf $spec "%-16s%s\n", "BuildArch:", "noarch" if ($noarch);
 
-    if ($requires{perl}) {
+    if (defined($requires{perl})) {
         $build_requires{perl}=$build_requires{perl} || $requires{perl};
         delete $requires{perl};
     }
 
-    if ($build_requires{perl}) {
+    if (defined($build_requires{perl})) {
         printf $spec "%-16s%s >= %s\n", "BuildRequires:", "perl",
             (($build_requires{perl} lt "5.6.0" ? "0:" : "1:")
             . $build_requires{perl});
