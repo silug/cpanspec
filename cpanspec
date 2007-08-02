@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.55 2007/08/02 22:51:41 stevenpritchard Exp $
+# $Id: cpanspec,v 1.56 2007/08/02 23:11:50 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.74';
@@ -1026,13 +1026,15 @@ Source99:       $name-filter-provides.sh
 END
     }
 
+    my $buildpath=$path;
+    $buildpath=~s/$version/\%{version}/;
     print $spec <<END;
 
 \%description
 $description
 
 \%prep
-\%setup -q@{[($noprefix ? "" : " -n $name-\%{version}")]}
+\%setup -q@{[($noprefix ? "" : " -n $buildpath")]}
 END
 
     if (@filter_requires) {
