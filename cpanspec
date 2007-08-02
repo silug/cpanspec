@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.54 2007/08/02 22:22:37 stevenpritchard Exp $
+# $Id: cpanspec,v 1.55 2007/08/02 22:51:41 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.74';
@@ -394,19 +394,19 @@ sub get_description(%) {
 
     my $path=$args{module};
     $path=~s,::,/,g;
-    my @pmfiles=("$args{name}-$args{version}/lib/$path.pod",
-        "$args{name}-$args{version}/lib/$path.pm");
+    my @pmfiles=("$args{path}/lib/$path.pod",
+        "$args{path}/lib/$path.pm");
     if ($args{module} =~ /::/) {
         my @tmp=split '/', $path;
         my $last=pop @tmp;
-        push(@pmfiles, "$args{name}-$args{version}/lib/$last.pod",
-            "$args{name}-$args{version}/lib/$last.pm");
+        push(@pmfiles, "$args{path}/lib/$last.pod",
+            "$args{path}/lib/$last.pm");
     }
     do {
-        push(@pmfiles, "$args{name}-$args{version}/$path.pod",
-            "$args{name}-$args{version}/$path.pm");
+        push(@pmfiles, "$args{path}/$path.pod",
+            "$args{path}/$path.pm");
     } while ($path=~s,^[^/]+/,,);
-    push(@pmfiles, "$args{name}-$args{version}/$args{module}")
+    push(@pmfiles, "$args{path}/$args{module}")
         if ($args{module} !~ /::/);
 
     for my $file (@pmfiles) {
@@ -450,7 +450,7 @@ sub get_description(%) {
         verbose "Trying to fetch description from $readme...";
 
         if (my $content=extract($args{archive}, $args{type},
-                "$args{name}-$args{version}/$readme")) {
+                "$args{path}/$readme")) {
             $content=~s/\r//g; # Why people use DOS text, I'll never understand.
             for my $string (split "\n\n", $content) {
                 $string=~s/^\n+//;
@@ -568,15 +568,15 @@ my @processed=();
 for my $file (@args) {
     my ($name,$version,$type);
 
-    if ($file =~ /^(?:.*\/)?(.*)-v?([^-]+)\.(tar)\.(?:gz|bz2)$/) {
+    if ($file =~ /^(?:.*\/)?(.*)-(?:v\.?)?([^-]+)\.(tar)\.(?:gz|bz2)$/) {
         $name=$1;
         $version=$2;
         $type=$3;
-    } elsif ($file =~ /^(?:.*\/)?(.*)-v?([^-]+)\.tgz$/) {
+    } elsif ($file =~ /^(?:.*\/)?(.*)-(?:v\.?)?([^-]+)\.tgz$/) {
         $name=$1;
         $version=$2;
         $type = 'tar';
-    } elsif ($file =~ /^(?:.*\/)?(.*)-v?([^-]+)\.(zip)$/) {
+    } elsif ($file =~ /^(?:.*\/)?(.*)-(?:v\.?)?([^-]+)\.(zip)$/) {
         $name=$1;
         $version=$2;
         $type=$3;
@@ -598,7 +598,7 @@ for my $file (@args) {
             fetch($source, $file);
             $name=$d->dist();
             $version=$d->version();
-            $version=~s/^v//;
+            $version=~s/^v\.?//;
             if ($file =~ /\.(tar)\.gz$/) {
                 $type=$1;
             } elsif ($file =~ /\.tgz$/) {
@@ -619,6 +619,7 @@ for my $file (@args) {
     $module=~s/-/::/g;
 
     my $archive;
+    my $path;
     if ($type eq 'tar') {
         my $f=$file;
         if ($file=~/\.bz2$/) {
@@ -649,13 +650,15 @@ for my $file (@args) {
     
     my $bogus=0;
     for my $entry (list_files($archive, $type)) {
-        if ($entry !~ /^(?:.\/)?$name-$version(?:\/|$)/) {
+        if ($entry !~ /^(?:.\/)?($name-(?:v\.?)?$version)(?:\/|$)/) {
             warn "BOGUS PATH DETECTED: $entry\n";
             $bogus++;
             next;
+        } elsif (!defined($path)) {
+            $path=$1;
         }
 
-        $entry=~s,^(?:.\/)?$name-$version/,,;
+        $entry=~s,^(?:.\/)?$name-(?:v\.?)?$version/,,;
         next if (!$entry);
 
         push(@files, $entry);
@@ -680,6 +683,7 @@ for my $file (@args) {
             module      => $module,
             version     => $version,
             files       => \@files,
+            path        => $path,
         );
 
     if (defined($description) and $description) {
@@ -699,6 +703,7 @@ for my $file (@args) {
                 !/\//
             and !/\.(pl|xs|h|c|pm|in|pod|cfg)$/i
             and !/^\./
+            and $_ ne $path
             and $_ ne "MANIFEST"
             and $_ ne "MANIFEST.SKIP"
             and $_ ne "INSTALL"
@@ -709,7 +714,6 @@ for my $file (@args) {
             and $_ ne "config.guess"
             and $_ ne "config.sub"
             and $_ ne "typemap"
-            and $_ ne "$name-$version"
             and $_ ne "bin"
             and $_ ne "lib"
             and $_ ne "t"
@@ -794,9 +798,14 @@ for my $file (@args) {
     my (%build_requires,%requires);
     my ($yml,$meta);
     if (grep /^META\.yml$/, @files
-        and $yml=extract($archive, $type, "$name-$version/META.yml")) {
+        and $yml=extract($archive, $type, "$path/META.yml")) {
         # Basic idea borrowed from Module::Depends.
-        my $meta=Load($yml);
+        my $meta;
+        eval { $meta=Load($yml); };
+        if ($@) {
+            warn "Error parsing $path/META.yml: $@";
+            goto SKIP;
+        }
 
         %build_requires=%{$meta->{build_requires}} if ($meta->{build_requires});
         %requires=%{$meta->{requires}} if ($meta->{requires});
@@ -845,6 +854,7 @@ for my $file (@args) {
                 $license="CHECK(Distributable)";
             }
         }
+        SKIP:
     }
 
     if (my @licenses=grep /license|copyright|copying/i, @doc) {
@@ -891,8 +901,8 @@ for my $file (@args) {
 
             local $/=undef;
 
-            my $makefilepl=extract($archive, $type, "$name-$version/Makefile.PL")
-                or warn "Failed to extract $name-$version/Makefile.PL";
+            my $makefilepl=extract($archive, $type, "$path/Makefile.PL")
+                or warn "Failed to extract $path/Makefile.PL";
 
             open(STDERR, ">/dev/null");
             eval "no warnings;
@@ -919,11 +929,9 @@ for my $file (@args) {
         }
     }
 
-    my $packageversion=$version;
-    $packageversion=~s/^v\.?(\d)/$1/i;
     print $spec <<END;
 Name:           $prefix$name
-Version:        $packageversion
+Version:        $version
 Release:        $release$disttag
 END
 
@@ -1151,7 +1159,7 @@ END
 \%{_mandir}/man3/*
 
 \%changelog
-* $date $packager $packageversion-$release
+* $date $packager $version-$release
 - Specfile autogenerated by $NAME $VERSION.
 END
 
