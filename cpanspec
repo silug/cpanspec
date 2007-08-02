@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.53 2007/07/16 16:10:40 stevenpritchard Exp $
+# $Id: cpanspec,v 1.54 2007/08/02 22:22:37 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.73';
+our $VERSION='1.74';
 
 =head1 NAME
 
@@ -568,15 +568,15 @@ my @processed=();
 for my $file (@args) {
     my ($name,$version,$type);
 
-    if ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.(tar)\.(?:gz|bz2)$/) {
+    if ($file =~ /^(?:.*\/)?(.*)-v?([^-]+)\.(tar)\.(?:gz|bz2)$/) {
         $name=$1;
         $version=$2;
         $type=$3;
-    } elsif ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.tgz$/) {
+    } elsif ($file =~ /^(?:.*\/)?(.*)-v?([^-]+)\.tgz$/) {
         $name=$1;
         $version=$2;
         $type = 'tar';
-    } elsif ($file =~ /^(?:.*\/)?(.*)-([^-]+)\.(zip)$/) {
+    } elsif ($file =~ /^(?:.*\/)?(.*)-v?([^-]+)\.(zip)$/) {
         $name=$1;
         $version=$2;
         $type=$3;
@@ -598,6 +598,7 @@ for my $file (@args) {
             fetch($source, $file);
             $name=$d->dist();
             $version=$d->version();
+            $version=~s/^v//;
             if ($file =~ /\.(tar)\.gz$/) {
                 $type=$1;
             } elsif ($file =~ /\.tgz$/) {
