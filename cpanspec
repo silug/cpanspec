@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.56 2007/08/02 23:11:50 stevenpritchard Exp $
+# $Id: cpanspec,v 1.57 2007/10/15 18:04:11 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.74';
@@ -826,7 +826,7 @@ for my $file (@args) {
             # docs, cross referenced with the list of licenses in
             # /usr/share/rpmlint/config.
             if ($meta->{license} =~ /^perl$/i) {
-                $license="GPL or Artistic";
+                $license="GPL+ or Artistic";
             } elsif ($meta->{license} =~ /^apache$/i) {
                 $license="Apache Software License";
             } elsif ($meta->{license} =~ /^artistic$/i) {
@@ -864,7 +864,7 @@ for my $file (@args) {
             $license.=", see @licenses";
         }
     }
-    $license="CHECK(GPL or Artistic)" if (!$license);
+    $license="CHECK(GPL+ or Artistic)" if (!$license);
 
     my $usebuildpl=0;
     if (grep /^Build\.PL$/, @files) {
