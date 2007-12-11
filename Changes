@@ -1,4 +1,4 @@
-1.74
+1.74    2007-12-11
 
 * Maybe finally handle "v" in version number correctly.
 * Continue on YAML errors.
