@@ -1,3 +1,8 @@
+1.75
+
+* Make sure $] is numeric before we use it with Module::CoreList.
+* Switch from wget to curl in cpanget since wget is broken in Fedora 9.
+
 1.74    2007-12-11
 
 * Maybe finally handle "v" in version number correctly.
