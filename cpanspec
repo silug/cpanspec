@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.58 2008/04/25 20:18:41 stevenpritchard Exp $
+# $Id: cpanspec,v 1.59 2008/05/05 18:39:21 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.75';
@@ -446,7 +446,9 @@ sub get_description(%) {
         }
     }
 
-    if (my $readme=(sort { $a cmp $b } (grep /README/i, @{$args{files}}))[0]) {
+    if (my $readme=(sort {
+                        length($a) <=> length($b) or $a cmp $b
+                     } (grep /README/i, @{$args{files}}))[0]) {
         verbose "Trying to fetch description from $readme...";
 
         if (my $content=extract($args{archive}, $args{type},
