@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.59 2008/05/05 18:39:21 stevenpritchard Exp $
+# $Id: cpanspec,v 1.60 2008/05/05 20:17:50 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.75';
@@ -561,10 +561,14 @@ if (!$packager or $packager eq "\%packager") {
         . "  Please add or use --packager option.\n";
 }
 
-my $perl_version=$]+0;
+my $perl_version=$];
 
-die "Module::CoreList does not support perl version $perl_version!\n"
-    if (!exists($Module::CoreList::version{$perl_version}));
+if (!exists($Module::CoreList::version{$perl_version})) {
+    $perl_version+=0;
+    if (!exists($Module::CoreList::version{$perl_version})) {
+        die "Module::CoreList does not support perl version $perl_version!\n";
+    }
+}
 
 my @args=@ARGV;
 my @processed=();
@@ -969,7 +973,7 @@ END
     }
 
     for my $dep (sort(keys(%build_requires))) {
-        if (exists($Module::CoreList::version{$]}{$dep})) {
+        if (exists($Module::CoreList::version{$perl_version}{$dep})) {
             next if (!$compat and $dep ne "ExtUtils::MakeMaker");
         } elsif ($follow) {
             if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
@@ -992,7 +996,7 @@ END
     }
 
     for my $dep (sort(keys(%requires))) {
-        next if (!$compat and exists($Module::CoreList::version{$]}{$dep}));
+        next if (!$compat and exists($Module::CoreList::version{$perl_version}{$dep}));
         printf $spec "%-16s%s", "Requires:", "perl($dep)";
         print $spec (" >= " . $requires{$dep}) if ($requires{$dep});
         print $spec "\n";
