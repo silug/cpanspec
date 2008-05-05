@@ -1,4 +1,4 @@
-1.75
+1.75    2008-05-05
 
 * Try $] as-is and numeric when we use it with Module::CoreList.
 * Switch from wget to curl in cpanget since wget is broken in Fedora 9.
