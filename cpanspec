@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.60 2008/05/05 20:17:50 stevenpritchard Exp $
+# $Id: cpanspec,v 1.61 2008/06/16 18:43:22 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.75';
+our $VERSION='1.76';
 
 =head1 NAME
 
@@ -198,7 +198,6 @@ use POSIX;
 use locale;
 use Text::Autoformat;
 use YAML qw(Load);
-use Module::CoreList;
 use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
@@ -343,23 +342,24 @@ sub build_rpm($) {
     my $spec=shift;
     my $dir=getcwd();
 
-    my $rpm=(-x "/usr/bin/rpmbuild" ? "/usr/bin/rpmbuild" : "/bin/rpm");
+    my $rpmbuild=(-x "/usr/bin/rpmbuild" ? "/usr/bin/rpmbuild" : "/bin/rpm");
 
     verbose("Building " . ($buildrpm ? "rpms" : "source rpm") . " from $spec");
 
     # From Fedora CVS Makefile.common.
-    if (system($rpm, "--define", "_sourcedir $dir",
-                     "--define", "_builddir $dir",
-                     "--define", "_srcrpmdir $dir",
-                     "--define", "_rpmdir $dir",
-                     "--nodeps", ($buildrpm ? "-ba" : "-bs"), $spec) != 0) {
+    if (system($rpmbuild, "--define", "_sourcedir $dir",
+                          "--define", "_builddir $dir",
+                          "--define", "_srcrpmdir $dir",
+                          "--define", "_rpmdir $dir",
+                          "--nodeps", ($buildrpm ? "-ba" : "-bs"),
+                          $spec) != 0) {
         if ($? == -1) {
-            die "Failed to execute $rpm: $!\n";
+            die "Failed to execute $rpmbuild: $!\n";
         } elsif (WIFSIGNALED($?)) {
-            die "$rpm died with signal " . WTERMSIG($?)
+            die "$rpmbuild died with signal " . WTERMSIG($?)
                 . (($? & 128) ? ", core dumped\n" : "\n");
         } else {
-            die "$rpm exited with value " . WEXITSTATUS($?) . "\n";
+            die "$rpmbuild exited with value " . WEXITSTATUS($?) . "\n";
         }
     }
 }
@@ -561,12 +561,16 @@ if (!$packager or $packager eq "\%packager") {
         . "  Please add or use --packager option.\n";
 }
 
-my $perl_version=$];
+our %corelist;
 
-if (!exists($Module::CoreList::version{$perl_version})) {
-    $perl_version+=0;
-    if (!exists($Module::CoreList::version{$perl_version})) {
-        die "Module::CoreList does not support perl version $perl_version!\n";
+my $rpm=new FileHandle "rpm -q --provides perl|"
+    or warn "Failed to execute rpm: $!\n";
+
+while (my $provides=<$rpm>) {
+    chomp $provides;
+
+    if ($provides=~/^perl\(([^\)]+)\)(?:\s+=\s+(\S+))\s*$/) {
+        $corelist{$1}=defined($2) ? $2 : 0;
     }
 }
 
@@ -973,8 +977,8 @@ END
     }
 
     for my $dep (sort(keys(%build_requires))) {
-        if (exists($Module::CoreList::version{$perl_version}{$dep})) {
-            next if (!$compat and $dep ne "ExtUtils::MakeMaker");
+        if (exists($corelist{$dep})) {
+            next if (!$compat);
         } elsif ($follow) {
             if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
                 if (check_dep($dep)) {
@@ -996,7 +1000,7 @@ END
     }
 
     for my $dep (sort(keys(%requires))) {
-        next if (!$compat and exists($Module::CoreList::version{$perl_version}{$dep}));
+        next if (!$compat and exists($corelist{$dep}));
         printf $spec "%-16s%s", "Requires:", "perl($dep)";
         print $spec (" >= " . $requires{$dep}) if ($requires{$dep});
         print $spec "\n";

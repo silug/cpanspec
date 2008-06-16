@@ -1,3 +1,7 @@
+1.76    2008-06-16
+
+* Drop dependency on Module::CoreList and just fetch the list from rpm.
+
 1.75    2008-05-05
 
 * Try $] as-is and numeric when we use it with Module::CoreList.

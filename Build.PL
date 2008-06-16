@@ -16,7 +16,6 @@ my $builder = Module::Build->new(
         'Getopt::Long'                  => 0,
         'locale'                        => 0,
         'LWP::UserAgent'                => 0,
-        'Module::CoreList'              => 0,
         'POSIX'                         => 0,
         'Parse::CPAN::Packages'         => 0,
         'Pod::Simple::TextContent'      => 0,
