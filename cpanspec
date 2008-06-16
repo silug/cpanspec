@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.61 2008/06/16 18:43:22 stevenpritchard Exp $
+# $Id: cpanspec,v 1.62 2008/06/16 19:24:04 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.76';
+our $VERSION='1.77';
 
 =head1 NAME
 
@@ -351,7 +351,7 @@ sub build_rpm($) {
                           "--define", "_builddir $dir",
                           "--define", "_srcrpmdir $dir",
                           "--define", "_rpmdir $dir",
-                          "--nodeps", ($buildrpm ? "-ba" : "-bs"),
+                          ($buildrpm ? "-ba" : ("-bs", "--nodeps")),
                           $spec) != 0) {
         if ($? == -1) {
             die "Failed to execute $rpmbuild: $!\n";
