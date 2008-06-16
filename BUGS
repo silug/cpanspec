@@ -10,3 +10,5 @@
 
 * Scripts aren't added to %files reliably.  Man pages for scripts are
   never added.
+
+* We should exclude zero-length items from %doc.
