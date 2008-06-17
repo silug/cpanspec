@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.62 2008/06/16 19:24:04 stevenpritchard Exp $
+# $Id: cpanspec,v 1.63 2008/06/17 20:47:40 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.77';
+our $VERSION='1.78';
 
 =head1 NAME
 
@@ -843,12 +843,14 @@ for my $file (@args) {
                 $license="Apache Software License";
             } elsif ($meta->{license} =~ /^artistic$/i) {
                 $license="Artistic";
+            } elsif ($meta->{license} =~ /^artistic_?2$/i) {
+                $license="Artistic 2.0";
             } elsif ($meta->{license} =~ /^bsd$/i) {
                 $license="BSD";
             } elsif ($meta->{license} =~ /^gpl$/i) {
-                $license="GPL";
+                $license="GPL+";
             } elsif ($meta->{license} =~ /^lgpl$/i) {
-                $license="LGPL";
+                $license="LGPLv2+";
             } elsif ($meta->{license} =~ /^mit$/i) {
                 $license="MIT";
             } elsif ($meta->{license} =~ /^mozilla$/i) {
