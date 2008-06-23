@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.63 2008/06/17 20:47:40 stevenpritchard Exp $
+# $Id: cpanspec,v 1.64 2008/06/23 23:55:11 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.78';
@@ -918,6 +918,7 @@ for my $file (@args) {
             my $makefilepl=extract($archive, $type, "$path/Makefile.PL")
                 or warn "Failed to extract $path/Makefile.PL";
 
+            open(STDIN, ">/dev/null");
             open(STDERR, ">/dev/null");
             eval "no warnings;
                   use subs qw(require die warn eval open close rename);
