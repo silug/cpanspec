@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.64 2008/06/23 23:55:11 stevenpritchard Exp $
+# $Id: cpanspec,v 1.65 2008/07/02 18:27:25 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.78';
@@ -662,6 +662,8 @@ for my $file (@args) {
     
     my $bogus=0;
     for my $entry (list_files($archive, $type)) {
+        next if ($type eq 'tar' and $entry eq 'pax_global_header');
+
         if ($entry !~ /^(?:.\/)?($name-(?:v\.?)?$version)(?:\/|$)/) {
             warn "BOGUS PATH DETECTED: $entry\n";
             $bogus++;
