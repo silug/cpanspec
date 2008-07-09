@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.65 2008/07/02 18:27:25 stevenpritchard Exp $
+# $Id: cpanspec,v 1.66 2008/07/09 17:37:15 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.78';
@@ -715,7 +715,7 @@ for my $file (@args) {
 
     my @doc=sort { $a cmp $b } grep {
                 !/\//
-            and !/\.(pl|xs|h|c|pm|in|pod|cfg)$/i
+            and !/\.(pl|xs|h|c|pm|in|pod|cfg|inl)$/i
             and !/^\./
             and $_ ne $path
             and $_ ne "MANIFEST"
@@ -739,7 +739,7 @@ for my $file (@args) {
 
     my $date=strftime("%a %b %d %Y", localtime);
 
-    my $noarch=!grep /\.(c|xs)$/i, @files;
+    my $noarch=!grep /\.(c|h|xs|inl)$/i, @files;
     my $vendorlib=($noarch ? "vendorlib" : "vendorarch");
     my $lib="\%{perl_$vendorlib}";
 

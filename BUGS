@@ -3,6 +3,7 @@
     - perlmenu 4.0 (*horrible* file name, paths in the tar file, etc.)
     - Data::Dump::Streamer 2.08-40
       (error: line 2: Illegal char '-' in version: Version:        2.08-40)
+    - Mail::ClamAV 0.22 (uses Inline, so it isn't noarch)
 
 * PAR 0.92 is arch-specific because of stuff in %{_bindir}, not
   %{perl_vendorarch}.  There's probably a way to detect that.
