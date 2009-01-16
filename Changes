@@ -1,10 +1,11 @@
-1.78
+1.78    2009-01-16
 
 * Fix up the license list some more.
 * Send STDIN to /dev/null in the child when executing Makefile.PL.
   (Bug report from Peter Willis.)
 * Ignore pax_global_header file.
 * Assume that *.inl is a hint that this isn't noarch.
+* It's 2009.  Update Copyright.
 
 1.77    2008-06-16
 

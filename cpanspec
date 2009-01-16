@@ -2,7 +2,7 @@
 #
 # cpanspec - Generate a spec file for a CPAN module
 #
-# Copyright (C) 2004-2008 Steven Pritchard <steve@kspei.com>
+# Copyright (C) 2004-2009 Steven Pritchard <steve@kspei.com>
 # This program is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.66 2008/07/09 17:37:15 stevenpritchard Exp $
+# $Id: cpanspec,v 1.67 2009/01/16 20:35:17 stevenpritchard Exp $
 
 our $NAME="cpanspec";
 our $VERSION='1.78';
