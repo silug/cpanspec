@@ -10,10 +10,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
-# $Id: cpanspec,v 1.67 2009/01/16 20:35:17 stevenpritchard Exp $
+# $Id: cpanspec,v 1.68 2009/01/22 01:48:06 stevenpritchard Exp $
 
 our $NAME="cpanspec";
-our $VERSION='1.78';
+our $VERSION='1.79';
 
 =head1 NAME
 
@@ -881,6 +881,28 @@ for my $file (@args) {
         }
     }
     $license="CHECK(GPL+ or Artistic)" if (!$license);
+
+    # Add build dependencies for modules used in tests.
+    my @tests=grep {
+                  $_ eq "test.pl"
+                  or $_ =~ /^t\/.*\.t$/
+              } @files;
+    use Module::ExtractUse;
+    for my $testfile (@tests) {
+        my $extract_o_matic=Module::ExtractUse->new()
+            or die "Module::ExtractUse->new failed: $!\n";
+        my $test=extract($archive, $type, $path . '/' . $testfile);
+        if (!defined($test)) {
+            warn "Failed to extract $testfile from $archive: $!\n";
+            next;
+        }
+        $extract_o_matic->extract_use(\$test);
+        #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
+        for my $dep ($extract_o_matic->array()) {
+            next if ($dep eq $module);
+            $build_requires{$dep}=0;
+        }
+    }
 
     my $usebuildpl=0;
     if (grep /^Build\.PL$/, @files) {
