@@ -1,6 +1,8 @@
 1.79
 
 * Extract dependencies from tests.
+* curl doesn't tell us what it is downloading, so be more verbose.
+* Don't download files with curl unless they've been modified.
 
 1.78    2009-01-16
 
