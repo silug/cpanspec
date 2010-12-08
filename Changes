@@ -3,6 +3,7 @@
 * Extract dependencies from tests.
 * curl doesn't tell us what it is downloading, so be more verbose.
 * Don't download files with curl unless they've been modified.
+* Add script detection (patch from Jeff Fearn).
 
 1.78    2009-01-16
 
