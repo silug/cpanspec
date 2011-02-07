@@ -664,7 +664,7 @@ for my $file (@args) {
     for my $entry (list_files($archive, $type)) {
         next if ($type eq 'tar' and $entry eq 'pax_global_header');
 
-        if ($entry !~ /^(?:.\/)?($name-(?:v\.?)?$version)(?:\/|$)/) {
+        if ($entry !~ /^(?:.\/)?($name(?:-(?:v\.?)?$version)?)(?:\/|$)/) {
             warn "BOGUS PATH DETECTED: $entry\n";
             $bogus++;
             next;
@@ -672,7 +672,7 @@ for my $file (@args) {
             $path=$1;
         }
 
-        $entry=~s,^(?:.\/)?$name-(?:v\.?)?$version/,,;
+        $entry =~ s,^(?:.\/)?$name(?:-(?:v\.?)?$version)?/,,;
         next if (!$entry);
 
         push(@files, $entry);
