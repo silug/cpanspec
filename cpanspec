@@ -252,7 +252,7 @@ my @MACROS = (
 
     # 1 is for the macros.
     {
-        'optimize'  => '%{optimize}',
+        'optimize'  => '%{optflags}',
         'buildroot' => '%{buildroot}',
     },
 );
