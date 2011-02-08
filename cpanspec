@@ -883,25 +883,27 @@ for my $file (@args) {
     }
     $license="CHECK(GPL+ or Artistic)" if (!$license);
 
-    # Add build dependencies for modules used in tests.
-    my @tests=grep {
-                  $_ eq "test.pl"
-                  or $_ =~ /^t\/.*\.t$/
-              } @files;
-    use Module::ExtractUse;
-    for my $testfile (@tests) {
-        my $extract_o_matic=Module::ExtractUse->new()
-            or die "Module::ExtractUse->new failed: $!\n";
-        my $test=extract($archive, $type, $path . '/' . $testfile);
-        if (!defined($test)) {
-            warn "Failed to extract $testfile from $archive: $!\n";
-            next;
-        }
-        $extract_o_matic->extract_use(\$test);
-        #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
-        for my $dep ($extract_o_matic->array()) {
-            next if ($dep eq $module);
-            $build_requires{$dep}=0;
+    # Add build dependencies for modules used in tests (if BuildRequires unset).
+    if (!keys %build_requires) {
+       my @tests=grep {
+                     $_ eq "test.pl"
+                     or $_ =~ /^t\/.*\.t$/
+                 } @files;
+       use Module::ExtractUse;
+       for my $testfile (@tests) {
+           my $extract_o_matic=Module::ExtractUse->new()
+               or die "Module::ExtractUse->new failed: $!\n";
+           my $test=extract($archive, $type, $path . '/' . $testfile);
+           if (!defined($test)) {
+               warn "Failed to extract $testfile from $archive: $!\n";
+               next;
+           }
+           $extract_o_matic->extract_use(\$test);
+           #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
+           for my $dep ($extract_o_matic->array()) {
+               next if ($dep eq $module);
+               $build_requires{$dep}=0;
+           }
         }
     }
 
