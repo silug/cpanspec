@@ -907,15 +907,23 @@ for my $file (@args) {
         }
     }
 
-    my $usebuildpl=0;
+    my $builder;
     if (grep /^Build\.PL$/, @files) {
         $build_requires{'Module::Build'}=0;
-        $usebuildpl=1;
+        $builder='Module::Build';
     } else {
-        $build_requires{'ExtUtils::MakeMaker'}=0;
+        my $makefilepl=extract($archive, $type, "$path/Makefile.PL")
+            or warn "Failed to extract $path/Makefile.PL";
+        if ($makefilepl && $makefilepl =~ m/use\s+inc::Module::Install/) {
+            $builder='Module::Install';
+        }
+        else {
+            $build_requires{'ExtUtils::MakeMaker'}=0;
+            $builder='ExtUtils::MakeMaker';
+        }
     }
 
-    if (!$usebuildpl) {
+    if (defined $build_requires{'ExtUtils::MakeMaker'}) {
         # This is an ugly hack to parse any PREREQ_PM in Makefile.PL.
         if (open(CHILD, "-|") == 0) {
             eval {
@@ -1107,7 +1115,7 @@ END
 \%build
 END
 
-    if ($usebuildpl) {
+    if ($builder eq 'Module::Build') {
         print $spec <<END;
 \%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
 ./Build
@@ -1133,7 +1141,7 @@ rm -rf $macro{buildroot}
 
 END
 
-    if ($usebuildpl) {
+    if ($builder eq 'Module::Build') {
         print $spec
             "./Build install destdir=$macro{buildroot} create_packlist=0\n";
     } else {
@@ -1170,7 +1178,7 @@ END
     print $spec <<END;
 \%check@{[($compat ? ' || :' : '')]}
 END
-    if ($usebuildpl) {
+    if ($builder eq 'Module::Build') {
         print $spec "./Build test\n";
     } else {
         print $spec "make test\n";
