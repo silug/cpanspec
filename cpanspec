@@ -1120,6 +1120,10 @@ END
 \%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
 ./Build
 END
+    } elsif ($builder eq 'Module::Install') {
+        print $spec <<END;
+\%{__perl} Makefile.PL --skipdeps INSTALLDIRS=vendor@{[$noarch ? '' : qq{ OPTIMIZE="$macro{optimize}"}]}
+END
     } else {
         print $spec <<END;
 \%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : qq{ OPTIMIZE="$macro{optimize}"}]}
