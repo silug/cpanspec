@@ -921,6 +921,10 @@ for my $file (@args) {
             $build_requires{'ExtUtils::MakeMaker'}=0;
             $builder='ExtUtils::MakeMaker';
         }
+        # If EXE_FILES is set, make sure $scripts is set
+        if ($makefilepl =~ m/^\s*(['"]?)EXE_FILES\b/m) {
+            $scripts++;
+        }
     }
 
     if (defined $build_requires{'ExtUtils::MakeMaker'}) {
