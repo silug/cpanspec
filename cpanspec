@@ -15,6 +15,14 @@
 our $NAME="cpanspec";
 our $VERSION='1.79';
 
+# Modules to exclude from Module::ExtractUser BuildRequires (typically author tests)
+my %EXTRACT_USE_BLACKLIST = map { $_ => 1 } qw(
+  Pod::Coverage::TrustPod
+  Test::Kwalitee
+  Test::Pod
+  Test::Pod::Coverage
+);
+
 =head1 NAME
 
 cpanspec - Generate a spec file for a CPAN module
@@ -904,6 +912,7 @@ for my $file (@args) {
            #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
            for my $dep ($extract_o_matic->array()) {
                next if ($dep eq $module);
+               next if ($EXTRACT_USE_BLACKLIST{$dep});
                $build_requires{$dep}=0;
            }
         }
