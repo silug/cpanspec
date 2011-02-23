@@ -904,6 +904,8 @@ for my $file (@args) {
                 $license="MIT";
             } elsif ($meta->{license} =~ /^mozilla$/i) {
                 $license="MPL";
+            } elsif ($meta->{license} =~ /^cc0$/i) {
+                $license="CC0";
             } elsif ($meta->{license} =~ /^open_source$/i) {
                 $license="OSI-Approved"; # rpmlint will complain
             } elsif ($meta->{license} =~ /^unrestricted$/i) {
