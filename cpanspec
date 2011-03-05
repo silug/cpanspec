@@ -1073,6 +1073,9 @@ END
         printf $spec "%-16s%s\n", "Provides:", $prov;
     }
 
+    # Add explicit AutoReq: no
+    printf $spec "%-16s%s\n", "Autoreq:", 'no';
+
     if (@filter_requires) {
         print $spec <<END
 
