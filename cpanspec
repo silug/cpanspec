@@ -672,6 +672,11 @@ for my $file (@args) {
     for my $entry (list_files($archive, $type)) {
         next if ($type eq 'tar' and $entry eq 'pax_global_header');
 
+        # Try stripping any non-digits from $version on a path failure
+        if ($entry !~ /^(?:.\/)?($name(?:-(?:v\.?)?$version)?)(?:\/|$)/) {
+          $version =~ s/\D+$//;
+        }
+
         if ($entry !~ /^(?:.\/)?($name(?:-(?:v\.?)?$version)?)(?:\/|$)/) {
             warn "BOGUS PATH DETECTED: $entry\n";
             $bogus++;
