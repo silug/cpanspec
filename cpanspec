@@ -818,8 +818,18 @@ for my $file (@args) {
     my $license="";
 
     # TODO It's possible these need to be listed instead of just detected.
-    my $scripts=(grep /^(?:bin|scripts)\//, @files);
     my $uses_autoinstall = grep /Module\/AutoInstall.pm/, @files;
+    my $scripts=(grep /^(?:bin|scripts?|tools)\//, @files);
+    my $makecontent;
+    if (grep /^Makefile\.PL$/, @files
+        and $makecontent=extract($archive, $type, "$path/Makefile.PL")) {
+        $scripts ||= $makecontent =~ 'install_script';
+        $scripts ||= ($makecontent =~ /EXE_FILES/ && $makecontent !~ /EXE_FILES.*\[\s*(qw\(\s*\)\s*)?\]/) ? 1 : 0;
+    }
+    if (grep /^Build\.PL$/, @files
+        and $makecontent=extract($archive, $type, "$path/Build.PL")) {
+        $scripts ||= $makecontent =~ 'script_files';
+    }
     my (%build_requires,%requires);
     my ($yml,$meta);
     if (grep /^META\.yml$/, @files
