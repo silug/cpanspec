@@ -586,6 +586,12 @@ while (my $provides=<$rpm>) {
 my @args=@ARGV;
 my @processed=();
 
+update_packages();
+$packages=Parse::CPAN::Packages->new($pkgdetails)
+    if (!defined($packages));
+die "Parse::CPAN::Packages->new() failed: $!\n"
+    if (!defined($packages));
+
 for my $file (@args) {
     my ($name,$version,$type);
 
@@ -607,11 +613,6 @@ for my $file (@args) {
         $file =~ s/-/::/g;
 
         # Look up $file in 02packages.details.txt.
-        update_packages();
-        $packages=Parse::CPAN::Packages->new($pkgdetails)
-            if (!defined($packages));
-        die "Parse::CPAN::Packages->new() failed: $!\n"
-            if (!defined($packages));
         my ($m,$d);
         if ($m=$packages->package($file) and $d=$m->distribution()) {
             $source=$cpan . "/authors/id/" . $d->prefix();
@@ -922,6 +923,19 @@ for my $file (@args) {
         #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
         for my $dep ($extract_o_matic->array()) {
             next if ($dep eq $module);
+            next if exists $build_requires{$dep};
+            my $package = $packages->package($dep);
+            if(!defined($package)) {
+                # Don't print this for common false positives
+                unless($dep =~ /^(Config|base|5|lib)/) {
+                    print STDERR "Module not on CPAN, not adding dependency: $dep\n";
+                }
+                next;
+            }
+            if($package->distribution->dist eq $name) {
+                print STDERR "Dependency $dep provided by ourselves, not adding dependency\n";
+                next;
+            }
             $build_requires{$dep} ||= 0;
         }
     }
