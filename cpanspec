@@ -1015,6 +1015,7 @@ END
     }
 
     if (defined($build_requires{perl})) {
+        $build_requires{perl} =~ s/^[<>=]+ *//;
         printf $spec "%-16s%s >= %s\n", "BuildRequires:", "perl",
             (($build_requires{perl} lt "5.6.0" ? "0:" : "1:")
             . $build_requires{perl}) if $build_requires{perl};
