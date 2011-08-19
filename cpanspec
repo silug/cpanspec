@@ -819,6 +819,7 @@ for my $file (@args) {
 
     # TODO It's possible these need to be listed instead of just detected.
     my $scripts=(grep /^(?:bin|scripts)\//, @files);
+    my $uses_autoinstall = grep /Module\/AutoInstall.pm/, @files;
     my (%build_requires,%requires);
     my ($yml,$meta);
     if (grep /^META\.yml$/, @files
@@ -1114,6 +1115,12 @@ END
 
 \%build
 END
+
+    if($uses_autoinstall) {
+        print $spec <<END
+export PERL_AUTOINSTALL="--skipdeps"
+END
+    }
 
     if ($usebuildpl) {
         print $spec <<END;
