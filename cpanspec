@@ -26,6 +26,7 @@ cpanspec [options] [file [...]]
  Options:
    --help       -h      Help message
    --old        -o      Be more compatible with old RHL/FC releases
+   --perl-version   -P  Minimum perl version to support
    --license    -l      Include generated license texts if absent in source
    --noprefix   -n      Don't add perl- prefix to package name
    --force      -f      Force overwriting existing spec
@@ -85,6 +86,11 @@ Uses C<%check || :> instead of just C<%check>.
 Includes a hack to remove LD_RUN_PATH from Makefile.
 
 =back
+
+=item B<-P>, B<--perl-version>
+
+Include explicit dependencies for core modules when newer versions are
+required than shipped with the specified version.
 
 =item B<-l>, B<--license>
 
@@ -204,6 +210,7 @@ use File::Basename;
 use LWP::UserAgent;
 use Parse::CPAN::Packages;
 use Pod::Simple::TextContent;
+use Module::CoreList;
 # Apparently gets pulled in by another module.
 #use Cwd;
 
@@ -211,6 +218,7 @@ our %opt;
 
 our $help=0;
 our $compat=0;
+our $perl_version=0;
 our $addlicense=0;
 our $noprefix=0;
 our $force=0;
@@ -527,6 +535,7 @@ setlocale(LC_ALL, "en_US.UTF-8");
 GetOptions(
         'help|h'            => \$help,
         'old|o'             => \$compat,
+        'perl-version|P=s'  => \$perl_version,
         'license|l'         => \$addlicense,
         'noprefix|n'        => \$noprefix,
         'force|f'           => \$force,
@@ -572,14 +581,21 @@ if (!$packager or $packager eq "\%packager") {
 
 our %corelist;
 
-my $rpm=new FileHandle "rpm -q --provides perl|"
-    or warn "Failed to execute rpm: $!\n";
+if($perl_version) {
+    die("Unknown perl version: $perl_version. (Known versions: " . join(", ", keys %Module::CoreList::version) . ")")
+        unless exists $Module::CoreList::version{$perl_version};
+    %corelist = %{ $Module::CoreList::version{$perl_version} };
+}
+else {
+    my $rpm=new FileHandle "rpm -q --provides perl|"
+        or warn "Failed to execute rpm: $!\n";
 
-while (my $provides=<$rpm>) {
-    chomp $provides;
+    while (my $provides=<$rpm>) {
+        chomp $provides;
 
-    if ($provides=~/^perl\(([^\)]+)\)(?:\s+=\s+(\S+))\s*$/) {
-        $corelist{$1}=defined($2) ? $2 : 0;
+        if ($provides=~/^perl\(([^\)]+)\)(?:\s+=\s+(\S+))\s*$/) {
+            $corelist{$1}=defined($2) ? $2 : 0;
+        }
     }
 }
 
@@ -1042,7 +1058,7 @@ END
 
     for my $dep (sort(keys(%build_requires))) {
         next if exists $dep_blacklist{$dep};
-        if (exists($corelist{$dep})) {
+        if (exists($corelist{$dep}) && $corelist{$dep} ge $build_requires{$dep}) {
             next if (!$compat);
         } elsif ($follow) {
             if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
