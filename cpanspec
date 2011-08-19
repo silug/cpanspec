@@ -922,16 +922,16 @@ for my $file (@args) {
         #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
         for my $dep ($extract_o_matic->array()) {
             next if ($dep eq $module);
-            $build_requires{$dep}=0;
+            $build_requires{$dep} ||= 0;
         }
     }
 
     my $usebuildpl=0;
     if (grep /^Build\.PL$/, @files) {
-        $build_requires{'Module::Build'}=0;
+        $build_requires{'Module::Build'} ||= 0;
         $usebuildpl=1;
     } else {
-        $build_requires{'ExtUtils::MakeMaker'}=0;
+        $build_requires{'ExtUtils::MakeMaker'} ||= 0;
     }
 
     if (!$usebuildpl) {
