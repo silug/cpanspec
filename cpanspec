@@ -843,6 +843,7 @@ for my $file (@args) {
         }
 
         %build_requires=%{$meta->{build_requires}} if ($meta->{build_requires});
+        %build_requires=(%build_requires, %{$meta->{configure_requires}}) if ($meta->{configure_requires});
         %requires=%{$meta->{requires}} if ($meta->{requires});
         if ($meta->{recommends}) {
             for my $dep (keys(%{$meta->{recommends}})) {
