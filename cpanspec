@@ -260,6 +260,15 @@ my @MACROS = (
 # this is set after the parameters are passed
 our %macro;
 
+our %dep_blacklist = (
+    'Win32' => 1,               # We're not on win32
+    'Win32::Process' => 1,      # We're not on win32
+    'Test::Perl::Critic' => 1,  # Too many dependencies
+    'ok' => 1,                  # Side effect of Test::use::ok
+    'BaseClass' => 1,           # Common test class shipped by ourselves
+    'TestServer' => 1,          # Likewise
+);
+
 sub print_version {
     print "$NAME version $VERSION\n";
     exit 0;
@@ -1005,6 +1014,7 @@ END
     }
 
     for my $dep (sort(keys(%build_requires))) {
+        next if exists $dep_blacklist{$dep};
         if (exists($corelist{$dep})) {
             next if (!$compat);
         } elsif ($follow) {
