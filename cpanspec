@@ -133,6 +133,10 @@ Disttag (a string to append to the release number), used to
 differentiate builds for various releases.  Defaults to the
 semi-standard (for Fedora) string C<%{?dist}>.
 
+=item B<-D>, B<--download-only>
+
+Only download the upstream tarball, do not generate a specfile
+
 =item B<-s>, B<--srpm>
 
 Build a source rpm from the generated spec file.
@@ -231,6 +235,7 @@ our $packager;
 our $release=1;
 our $epoch;
 our $disttag='%{?dist}';
+our $download_only=0;
 our $buildsrpm=0;
 our $buildrpm=0;
 our $verbose=0;
@@ -549,6 +554,7 @@ GetOptions(
         'release|r=i'       => \$release,
         'epoch|e=i'         => \$epoch,
         'disttag|d=s'       => \$disttag,
+        'download-only|D'   => \$download_only,
         'srpm|s'            => \$buildsrpm,
         'build|b'           => \$buildrpm,
         'cpan|c=s'          => \$cpan,
@@ -640,6 +646,7 @@ for my $file (@args) {
             $source=$cpan . "/authors/id/" . $d->prefix();
             $file=basename($d->filename());
             fetch($source, $file);
+            next if $download_only;
             $name=$d->dist();
             $version=$d->version();
             $version=~s/^v\.?//;

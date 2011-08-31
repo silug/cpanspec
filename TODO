@@ -1,9 +1,5 @@
 * Planned features (as of 2005-09-19):
 
-  - Download from CPAN automatically when executed as "cpanspec Foo::Bar".
-    + DONE!
-    + Add --download-only or something similar to replace cpanget.
-
 * Add options to filter out Provides/Requires.
   - Done, but the documentation needs work.
 
