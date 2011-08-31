@@ -15,6 +15,14 @@
 our $NAME="cpanspec";
 our $VERSION='1.79';
 
+# Modules to exclude from Module::ExtractUser BuildRequires (typically author tests)
+my %EXTRACT_USE_BLACKLIST = map { $_ => 1 } qw(
+  Pod::Coverage::TrustPod
+  Test::Kwalitee
+  Test::Pod
+  Test::Pod::Coverage
+);
+
 =head1 NAME
 
 cpanspec - Generate a spec file for a CPAN module
@@ -252,7 +260,7 @@ my @MACROS = (
 
     # 1 is for the macros.
     {
-        'optimize'  => '%{optimize}',
+        'optimize'  => '%{optflags}',
         'buildroot' => '%{buildroot}',
     },
 );
@@ -664,7 +672,12 @@ for my $file (@args) {
     for my $entry (list_files($archive, $type)) {
         next if ($type eq 'tar' and $entry eq 'pax_global_header');
 
-        if ($entry !~ /^(?:.\/)?($name-(?:v\.?)?$version)(?:\/|$)/) {
+        # Try stripping any non-digits from $version on a path failure
+        if ($entry !~ /^(?:.\/)?($name(?:-(?:v\.?)?$version)?)(?:\/|$)/) {
+          $version =~ s/\D+$//;
+        }
+
+        if ($entry !~ /^(?:.\/)?($name(?:-(?:v\.?)?$version)?)(?:\/|$)/) {
             warn "BOGUS PATH DETECTED: $entry\n";
             $bogus++;
             next;
@@ -672,7 +685,7 @@ for my $file (@args) {
             $path=$1;
         }
 
-        $entry=~s,^(?:.\/)?$name-(?:v\.?)?$version/,,;
+        $entry =~ s,^(?:.\/)?$name(?:-(?:v\.?)?$version)?/,,;
         next if (!$entry);
 
         push(@files, $entry);
@@ -858,6 +871,8 @@ for my $file (@args) {
                 $license="MIT";
             } elsif ($meta->{license} =~ /^mozilla$/i) {
                 $license="MPL";
+            } elsif ($meta->{license} =~ /^cc0$/i) {
+                $license="CC0";
             } elsif ($meta->{license} =~ /^open_source$/i) {
                 $license="OSI-Approved"; # rpmlint will complain
             } elsif ($meta->{license} =~ /^unrestricted$/i) {
@@ -883,37 +898,52 @@ for my $file (@args) {
     }
     $license="CHECK(GPL+ or Artistic)" if (!$license);
 
-    # Add build dependencies for modules used in tests.
-    my @tests=grep {
-                  $_ eq "test.pl"
-                  or $_ =~ /^t\/.*\.t$/
-              } @files;
-    use Module::ExtractUse;
-    for my $testfile (@tests) {
-        my $extract_o_matic=Module::ExtractUse->new()
-            or die "Module::ExtractUse->new failed: $!\n";
-        my $test=extract($archive, $type, $path . '/' . $testfile);
-        if (!defined($test)) {
-            warn "Failed to extract $testfile from $archive: $!\n";
-            next;
-        }
-        $extract_o_matic->extract_use(\$test);
-        #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
-        for my $dep ($extract_o_matic->array()) {
-            next if ($dep eq $module);
-            $build_requires{$dep}=0;
+    # Add build dependencies for modules used in tests (if BuildRequires unset).
+    if (!keys %build_requires) {
+       my @tests=grep {
+                     $_ eq "test.pl"
+                     or $_ =~ /^t\/.*\.t$/
+                 } @files;
+       use Module::ExtractUse;
+       for my $testfile (@tests) {
+           my $extract_o_matic=Module::ExtractUse->new()
+               or die "Module::ExtractUse->new failed: $!\n";
+           my $test=extract($archive, $type, $path . '/' . $testfile);
+           if (!defined($test)) {
+               warn "Failed to extract $testfile from $archive: $!\n";
+               next;
+           }
+           $extract_o_matic->extract_use(\$test);
+           #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
+           for my $dep ($extract_o_matic->array()) {
+               next if ($dep eq $module);
+               next if ($EXTRACT_USE_BLACKLIST{$dep});
+               $build_requires{$dep}=0;
+           }
         }
     }
 
-    my $usebuildpl=0;
+    my $builder;
     if (grep /^Build\.PL$/, @files) {
         $build_requires{'Module::Build'}=0;
-        $usebuildpl=1;
+        $builder='Module::Build';
     } else {
-        $build_requires{'ExtUtils::MakeMaker'}=0;
+        my $makefilepl=extract($archive, $type, "$path/Makefile.PL")
+            or warn "Failed to extract $path/Makefile.PL";
+        if ($makefilepl && $makefilepl =~ m/use\s+inc::Module::Install/) {
+            $builder='Module::Install';
+        }
+        else {
+            $build_requires{'ExtUtils::MakeMaker'}=0;
+            $builder='ExtUtils::MakeMaker';
+        }
+        # If EXE_FILES is set, make sure $scripts is set
+        if ($makefilepl =~ m/^\s*(['"]?)EXE_FILES\b/m) {
+            $scripts++;
+        }
     }
 
-    if (!$usebuildpl) {
+    if (defined $build_requires{'ExtUtils::MakeMaker'}) {
         # This is an ugly hack to parse any PREREQ_PM in Makefile.PL.
         if (open(CHILD, "-|") == 0) {
             eval {
@@ -1048,6 +1078,9 @@ END
         printf $spec "%-16s%s\n", "Provides:", $prov;
     }
 
+    # Add explicit AutoReq: no
+    printf $spec "%-16s%s\n", "Autoreq:", 'no';
+
     if (@filter_requires) {
         print $spec <<END
 
@@ -1105,10 +1138,14 @@ END
 \%build
 END
 
-    if ($usebuildpl) {
+    if ($builder eq 'Module::Build') {
         print $spec <<END;
 \%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
 ./Build
+END
+    } elsif ($builder eq 'Module::Install') {
+        print $spec <<END;
+\%{__perl} Makefile.PL --skipdeps INSTALLDIRS=vendor@{[$noarch ? '' : qq{ OPTIMIZE="$macro{optimize}"}]}
 END
     } else {
         print $spec <<END;
@@ -1131,7 +1168,7 @@ rm -rf $macro{buildroot}
 
 END
 
-    if ($usebuildpl) {
+    if ($builder eq 'Module::Build') {
         print $spec
             "./Build install destdir=$macro{buildroot} create_packlist=0\n";
     } else {
@@ -1168,7 +1205,7 @@ END
     print $spec <<END;
 \%check@{[($compat ? ' || :' : '')]}
 END
-    if ($usebuildpl) {
+    if ($builder eq 'Module::Build') {
         print $spec "./Build test\n";
     } else {
         print $spec "make test\n";
