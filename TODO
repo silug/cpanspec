@@ -3,9 +3,6 @@
 * Add options to filter out Provides/Requires.
   - Done, but the documentation needs work.
 
-* Check the search path for rpm, rpmbuild, etc. instead of hard-coding
-  paths.
-
 * Try to get cpan_home from CPAN::MyConfig or CPAN::Config instead of
   hard-coding $pkgdetails.
 

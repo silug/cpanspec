@@ -369,7 +369,7 @@ sub build_rpm($) {
     my $spec=shift;
     my $dir=getcwd();
 
-    my $rpmbuild=(-x "/usr/bin/rpmbuild" ? "/usr/bin/rpmbuild" : "/bin/rpm");
+    my $rpmbuild=which("rpmbuild","rpm");
 
     verbose("Building " . ($buildrpm ? "rpms" : "source rpm") . " from $spec");
 
@@ -501,8 +501,7 @@ sub get_description(%) {
 sub check_rpm($) {
     my $dep=shift;
 
-    my $rpm="/bin/rpm";
-    return undef if (!-x $rpm);
+    my $rpm=which("rpm");
 
     my @out=`$rpm -q --whatprovides "$dep"`;
 
@@ -517,8 +516,7 @@ sub check_rpm($) {
 sub check_repo($) {
     my $dep=shift;
 
-    my $repoquery="/usr/bin/repoquery";
-    return undef if (!-x $repoquery);
+    my $repoquery=which("repoquery");
 
     verbose("Running $repoquery to check for $dep.  This may take a while...");
     my @out=`$repoquery --whatprovides "$dep"`;
@@ -535,6 +533,15 @@ sub check_dep($) {
     my $module=shift;
 
     return (check_rpm("perl($module)") || check_repo("perl($module)"));
+}
+
+sub which(@) {
+    for my $bin (@_) {
+        for my $path (split /:/, $ENV{PATH}) {
+            return "$path/$bin" if -x "$path/$bin";
+        }
+    }
+    die("Cannot find " . join(" or ", @_));
 }
 
 # Set locale to en_US.UTF8 so that dates in changelog will be correct
@@ -582,7 +589,8 @@ if ($follow and $buildrpm) {
 
 my $prefix=$noprefix ? "" : "perl-";
 
-$packager=$packager || `rpm --eval '\%packager'`;
+my $rpm=which("rpm");
+$packager=$packager || `$rpm --eval '\%packager'`;
 
 chomp $packager;
 
