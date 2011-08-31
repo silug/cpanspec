@@ -109,6 +109,10 @@ Force overwriting an existing spec file.  Normally B<cpanspec> will
 refuse to overwrite an existing spec file for safety.  This option
 removes that safety check.  Please use with caution.
 
+=item B<-S>, B<--stdout>
+
+Write the generated spec file to stdout instead of a file.
+
 =item B<-p>, B<--packager>
 
 The name and email address of the packager.  Overrides the C<%packager>
@@ -222,6 +226,7 @@ our $perl_version=0;
 our $addlicense=0;
 our $noprefix=0;
 our $force=0;
+our $stdout=0;
 our $packager;
 our $release=1;
 our $epoch;
@@ -539,6 +544,7 @@ GetOptions(
         'license|l'         => \$addlicense,
         'noprefix|n'        => \$noprefix,
         'force|f'           => \$force,
+        'stdout|S'          => \$stdout,
         'packager|p=s'      => \$packager,
         'release|r=i'       => \$release,
         'epoch|e=i'         => \$epoch,
@@ -817,7 +823,9 @@ for my $file (@args) {
     verbose "Writing $specfile...";
 
     my $spec;
-    if ($force) {
+    if ($stdout) {
+        $spec = *STDOUT;
+    } elsif ($force) {
         rename($specfile, "$specfile~") if (-e $specfile);
         $spec=new FileHandle ">$specfile";
     } else {
