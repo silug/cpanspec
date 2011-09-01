@@ -1,18 +1,7 @@
 * Planned features (as of 2005-09-19):
 
-  - Download from CPAN automatically when executed as "cpanspec Foo::Bar".
-    + DONE!
-    + Add --download-only or something similar to replace cpanget.
-
-* It would be useful to be able to write the spec to stdout.
-
 * Add options to filter out Provides/Requires.
   - Done, but the documentation needs work.
-
-* Do a better job of detecting scripts in the package.
-
-* Check the search path for rpm, rpmbuild, etc. instead of hard-coding
-  paths.
 
 * Try to get cpan_home from CPAN::MyConfig or CPAN::Config instead of
   hard-coding $pkgdetails.
