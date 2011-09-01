@@ -235,7 +235,7 @@ our $packager;
 our $release=1;
 our $epoch;
 our $disttag='%{?dist}';
-our $download_only=0;
+our $download_only=(basename($0) eq "cpanget") ? 1 : 0;
 our $buildsrpm=0;
 our $buildrpm=0;
 our $verbose=0;
