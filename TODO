@@ -1,9 +1,9 @@
-* Planned features (as of 2005-09-19):
-
-* Add options to filter out Provides/Requires.
-  - Done, but the documentation needs work.
+* Planned features (as of 2011-09-01):
 
 * Try to get cpan_home from CPAN::MyConfig or CPAN::Config instead of
   hard-coding $pkgdetails.
 
 * Add an option to honor %_sourcedir and such.
+
+* Install cpanspec as cpanget (with a symlink?) also.
+  - Also need to add a man page for cpanget.

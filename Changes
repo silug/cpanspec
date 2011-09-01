@@ -1,9 +1,24 @@
 1.79
 
 * Extract dependencies from tests.
-* curl doesn't tell us what it is downloading, so be more verbose.
-* Don't download files with curl unless they've been modified.
 * Add script detection (patch from Jeff Fearn).
+* Lots and lots of patches from Dennis Kaarsemaker and Gavin Carr:
+  * Drop cpanget and add the functionality to cpanspec.
+    (FIXME: cpanspec needs to be installed as cpanget as well.)
+  * Check the search path for rpm, rpmbuild, etc.
+  * Add CC0 licence.
+  * Change %{optimize} to %{optflags}.
+  * Make tarball directory version component optional.
+  * Add an option to print the generated specfile to stdout
+  * Allow building rpms for slightly older perl versions
+  * Check all build requirements against CPAN
+  * Stop losing dependency version information for Module::Build,
+    ExtUtils::MakeMaker, etc.
+  * Strip any version comparison operator from the 'perl' build requirement
+  * Add entries from configure_requres in META.yml as build dependencies
+  * Detect scripts better
+  * Don't let Module::AutoInstall run interactively
+  * Add a simple blacklisting mechanism
 
 1.78    2009-01-16
 
