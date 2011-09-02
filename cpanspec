@@ -19,9 +19,13 @@ our $VERSION='1.79';
 
 cpanspec - Generate a spec file for a CPAN module
 
+cpanget - Download a CPAN module
+
 =head1 SYNOPSIS
 
-cpanspec [options] [file [...]]
+cpanspec [options] [module [...]]
+
+cpanget [options] [module [...]]
 
  Options:
    --help       -h      Help message
@@ -39,6 +43,7 @@ cpanspec [options] [file [...]]
    --cpan       -c      CPAN mirror URL
    --verbose    -v      Be more verbose
    --prefer-macros  -m  Prefer macros over environment variables in the spec
+   --download-only  -D  Only download the tarball from CPAN
 
  Long options:
    --follow             Process build dependencies
@@ -49,10 +54,24 @@ cpanspec [options] [file [...]]
    --add-buildrequires  Add BuildRequires for this item
    --version            Print the version number and exit
 
+The modules specified on the command line can be either filenames of tarballs,
+or module names as downloadable from CPAN.
+
+=head1 EXAMPLES
+
+cpanspec Linux::Prctl
+
+cpanspec ~/downloads/Acme-MetaSyntactic-0.99.tar.gz
+
+cpanget Module::Build
+
 =head1 DESCRIPTION
 
 B<cpanspec> will generate a spec file to build a rpm from a CPAN-style
 Perl module distribution.
+
+B<cpanget> will download the tarball for a module from CPAN. This
+implies --download-only and ignores most other options.
 
 =head1 OPTIONS
 
@@ -135,7 +154,9 @@ semi-standard (for Fedora) string C<%{?dist}>.
 
 =item B<-D>, B<--download-only>
 
-Only download the upstream tarball, do not generate a specfile
+Only download the upstream tarball, do not generate a specfile. Most
+other options are ignored as they are only relevant when creating a
+specfile or building a package.
 
 =item B<-s>, B<--srpm>
 
