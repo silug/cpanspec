@@ -4,6 +4,3 @@
   hard-coding $pkgdetails.
 
 * Add an option to honor %_sourcedir and such.
-
-* Install cpanspec as cpanget (with a symlink?) also.
-  - Also need to add a man page for cpanget.
