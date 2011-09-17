@@ -990,12 +990,12 @@ for my $file (@args) {
             if(!defined($package)) {
                 # Don't print this for common false positives
                 unless($dep =~ /^(Config|base|5|lib)/) {
-                    verbose("Module not on CPAN, not adding dependency: $dep\n");
+                    verbose("Module not on CPAN, not adding dependency: $dep");
                 }
                 next;
             }
             if($package->distribution->dist eq $name) {
-                verbose("Dependency $dep provided by ourselves, not adding dependency\n");
+                verbose("Dependency $dep provided by ourselves, not adding dependency");
                 next;
             }
             $build_requires{$dep} ||= 0;
