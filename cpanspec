@@ -973,6 +973,7 @@ for my $file (@args) {
                   or $_ =~ /^t\/.*\.t$/
               } @files;
     use Module::ExtractUse;
+    my %bogus_dep=();
     for my $testfile (@tests) {
         my $extract_o_matic=Module::ExtractUse->new()
             or die "Module::ExtractUse->new failed: $!\n";
@@ -982,20 +983,21 @@ for my $file (@args) {
             next;
         }
         $extract_o_matic->extract_use(\$test);
-        #print STDERR "$testfile: @{[$extract_o_matic->array()]}\n";
         for my $dep ($extract_o_matic->array()) {
             next if ($dep eq $module);
             next if exists $build_requires{$dep};
+            next if exists $bogus_dep{$dep};
             my $package = $packages->package($dep);
-            if(!defined($package)) {
+            if (!defined($package)) {
+                $bogus_dep{$dep}++;
                 # Don't print this for common false positives
-                unless($dep =~ /^(Config|base|5|lib)/) {
+                unless ($dep =~ /^(Config|base|5|lib)/) {
                     verbose("Module not on CPAN, not adding dependency: $dep");
                 }
                 next;
             }
-            if($package->distribution->dist eq $name) {
-                verbose("Dependency $dep provided by ourselves, not adding dependency");
+            if ($package->distribution->dist eq $name) {
+                #verbose("Dependency $dep provided by ourselves, not adding dependency");
                 next;
             }
             $build_requires{$dep} ||= 0;
