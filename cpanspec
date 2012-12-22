@@ -30,6 +30,7 @@ cpanget [options] [module [...]]
  Options:
    --help       -h      Help message
    --old        -o      Be more compatible with old RHL/FC releases
+   --spec-dist  -sd     Spec file compatibility distribution
    --perl-version   -P  Minimum perl version to support
    --license    -l      Include generated license texts if absent in source
    --noprefix   -n      Don't add perl- prefix to package name
@@ -247,6 +248,7 @@ our %opt;
 
 our $help=0;
 our $compat=0;
+our $spec_dist=0;
 our $perl_version=0;
 our $addlicense=0;
 our $noprefix=0;
@@ -565,6 +567,14 @@ sub which(@) {
     die("Cannot find " . join(" or ", @_));
 }
 
+sub get_default_dist(){
+    my $rpm = which("rpm");
+    my $result = `$rpm --eval %{dist}`;
+    $result =~ s/^\.//;
+    chomp($result);
+    return $result;
+}
+
 # Set locale to en_US.UTF8 so that dates in changelog will be correct
 # if using another locale. Also ensures writing out UTF8. (Thanks to
 # Roy-Magne Mo for pointing out the problem and providing a solution.)
@@ -573,6 +583,7 @@ setlocale(LC_ALL, "en_US.UTF-8");
 GetOptions(
         'help|h'            => \$help,
         'old|o'             => \$compat,
+        'spec-dist|sd=s'     => \$spec_dist,
         'perl-version|P=s'  => \$perl_version,
         'license|l'         => \$addlicense,
         'noprefix|n'        => \$noprefix,
@@ -599,6 +610,18 @@ GetOptions(
 
 pod2usage({ -exitval => 0, -verbose => 1 }) if ($help);
 pod2usage({ -exitval => 1, -verbose => 0 }) if (!@ARGV);
+
+if($compat and $spec_dist){
+    warn "You cannot use --old and --spec_dist together.\n"
+        ."We will target '$spec_dist'\n";
+    $compat=0;
+}
+
+if($compat){
+    $spec_dist = "old"; #This should explicitly set the dist that compat targets
+}
+
+$spec_dist = get_default_dist() if(!$spec_dist);
 
 if ($follow and $buildrpm) {
     warn "Sorry, --follow and --build are mutually exclusive right now.\n"
@@ -873,8 +896,9 @@ for my $file (@args) {
         next;
     }
 
-    print $spec qq[\%{!?perl_$vendorlib: \%define perl_$vendorlib \%(eval "\`\%{__perl} -V:install$vendorlib\`"; echo \$install$vendorlib)}\n\n]
-        if ($compat);
+    my $writer = SpecFileWriter->new($spec, $spec_dist);
+
+    $writer->print_prefix($vendorlib);
 
     my $license="";
 
@@ -1318,5 +1342,72 @@ END
 
     push(@processed, $module);
 }
+
+
+# #######################################################################
+# SpecFileWriter
+# 
+# An attempt to create logic that will support spec file writing for 
+# multiple versions of rpm.
+#
+# #######################################################################
+
+package SpecFileWriter;
+
+sub new(){
+    my ($class, $spec_file, $dist) = @_;
+    
+    # Each "section" of the spec file has an array of hashes.  Each hash is basically acting 
+    # like a tuple.  The key is a regular expression that matches the dist and the value is
+    # a function that will return a string that should be printed to the spec file.
+
+    # I realize that this could be a bit confusing.  The benefit here, is that adding support
+    # for another dist is as easy as adding the methods below to write out all sections of the
+    # file that need to be treated differently.
+    my $self = {
+        spec_file => $spec_file,
+        dist => $dist,
+        prefix => [
+            {qr/^old$/ => sub(){
+                my ($vendorlib) = @_; 
+                return qq[\%{!?perl_$vendorlib: \%define perl_$vendorlib \%(eval "\`\%{__perl} -V:install$vendorlib\`"; echo \$install$vendorlib)}\n\n];
+            }},
+            {qr/.*/ => sub(){
+                return "";
+            }},
+        ],
+        
+    };
+    return bless($self);
+}
+
+sub AUTOLOAD(){
+    my $self = shift;
+    my $spec = $self->{spec_file};
+    my $function_name = $SpecFileWriter::AUTOLOAD;
+    $function_name =~ s/SpecFileWriter::print_//;
+    my $some_function = $self->get_desired_function($function_name);
+    my $result = $some_function->(@_);
+    print $spec "$result";
+}
+
+# By passing in the key of the desired function, the writer can determine which function
+# supports the dist.  The first match wins, so /.*/ should always be last.
+sub get_desired_function(){
+    my ($self, $action_key) = @_;
+    
+    my $dist = $self->{dist};
+    
+    foreach(@{$self->{$action_key}}){
+         my ($key, $value) = each($_);
+         return $value if($dist =~ /$key/);
+    }
+    
+    die "Cannot locate appropriate method for \"$action_key\" in dist \"$dist\"\n";
+
+}
+
+# Have to create a DESTROY function when you have an AUTOLOAD.
+sub DESTROY(){ }
 
 # vi: set ai et:
