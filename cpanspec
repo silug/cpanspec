@@ -1092,22 +1092,23 @@ for my $file (@args) {
         }
     }
 
-    print $spec <<END;
-Name:           $prefix$name
-Version:        $version
-Release:        $release$disttag
-END
+    $writer->print_name("$prefix$name");
+    $writer->print_version($version);
+    $writer->print_release($release, $disttag);
+    
+    $writer->print_epoch($epoch) if(defined($epoch));
+    
+    my @sources = ($source);
 
-    print $spec "Epoch:          $epoch\n" if (defined($epoch));
+    # TODO: I *think* it would make sense to add lines 1175 - 1190 to the sources array here
+    #       instead of listing them as Source98 and Source99.  I have a feeling they are 
+    #       not rolled together on purpose.
 
-    print $spec <<END;
-Summary:        $summary
-License:        $license
-Group:          Development/Libraries
-URL:            $url
-Source0:        $source
-BuildRoot:      \%{_tmppath}/\%{name}-\%{version}-\%{release}-root-\%(\%{__id_u} -n)
-END
+    $writer->print_summary($summary);
+    $writer->print_license($license);
+    $writer->print_group("Development/Libraries");
+    $writer->print_source(@sources);
+    $writer->print_build_root();
 
     printf $spec "%-16s%s\n", "BuildArch:", "noarch" if ($noarch);
 
@@ -1347,8 +1348,7 @@ END
 # #######################################################################
 # SpecFileWriter
 # 
-# An attempt to create logic that will support spec file writing for 
-# multiple versions of rpm.
+# An attempt to support spec file writing for multiple versions of rpm.
 #
 # #######################################################################
 
@@ -1376,9 +1376,79 @@ sub new(){
                 return "";
             }},
         ],
-        
+        name => [
+            {qr/.*/ => sub(){
+                my ($name) = @_;
+                return "Name:           $name\n";
+            }}
+        ],
+        version => [
+            {qr/.*/ => sub(){
+                my ($version) = @_;
+                return "Version:        $version\n";
+            }}
+        ],
+        release => [
+            {qr/.*/ => sub(){
+                my ($release, $disttag) = @_;
+                return "Release:        $release$disttag\n";
+            }}
+        ],
+        epoch => [
+            {qr/.*/ => sub(){
+                my ($epoch) = @_;
+                return "Epoch:          $epoch\n";
+            }}
+        ],
+        summary => [
+            {qr/.*/ => sub(){
+                my ($summary) = @_;
+                return "Summary:        $summary\n";
+            }}
+        ],
+        license => [
+            {qr/.*/ => sub(){
+                my ($license) = @_;
+                return "License:        $license\n";
+            }}
+        ],
+        group => [
+            {qr/.*/ => sub(){
+                my ($group) = @_;
+                return "Group:          $group\n";
+            }}
+        ],
+        url => [
+            {qr/.*/ => sub(){
+                my ($url) = @_;
+                return "URL:            $url\n";
+            }}
+        ],
+        source => [
+            {qr/.*/ => sub(){
+                my (@sources) = @_;
+                my $result = "";
+                for my $i (0 .. $#sources){
+                    $result = $result . "Source$i:        $sources[$i]\n";
+                }
+                return $result;
+            }}
+        ],
+        build_root => [
+            {qr/.*/ => sub(){
+                return "BuildRoot:      \%{_tmppath}/\%{name}-\%{version}-\%{release}-root-\%(\%{__id_u} -n)\n";
+            }}
+        ],      
     };
     return bless($self);
+}
+
+sub print(){
+    my $self = shift;
+    my $spec = $self->{spec_file};
+    foreach (@_){
+        print $spec $_;
+    }
 }
 
 sub AUTOLOAD(){
