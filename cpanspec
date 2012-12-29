@@ -1110,7 +1110,7 @@ for my $file (@args) {
     $writer->print_source(@sources);
     $writer->print_build_root();
 
-    printf $spec "%-16s%s\n", "BuildArch:", "noarch" if ($noarch);
+    $writer->print_build_arch("noarch") if ($noarch);
 
     if (defined($requires{perl})) {
         $build_requires{perl}=$build_requires{perl} || $requires{perl};
@@ -1372,75 +1372,66 @@ sub new(){
                 my ($vendorlib) = @_; 
                 return qq[\%{!?perl_$vendorlib: \%define perl_$vendorlib \%(eval "\`\%{__perl} -V:install$vendorlib\`"; echo \$install$vendorlib)}\n\n];
             }},
-            {qr/.*/ => sub(){
-                return "";
-            }},
+            {qr/.*/ => "" }
         ],
         name => [
-            {qr/.*/ => sub(){
-                my ($name) = @_;
-                return "Name:           $name\n";
-            }}
+            {qr/.*/ => preamble_line("Name")}
         ],
         version => [
-            {qr/.*/ => sub(){
-                my ($version) = @_;
-                return "Version:        $version\n";
-            }}
+            {qr/.*/ => preamble_line("Version")}
         ],
         release => [
-            {qr/.*/ => sub(){
-                my ($release, $disttag) = @_;
-                return "Release:        $release$disttag\n";
-            }}
+            {qr/.*/ => preamble_line("Release")}
         ],
         epoch => [
-            {qr/.*/ => sub(){
-                my ($epoch) = @_;
-                return "Epoch:          $epoch\n";
-            }}
+            {qr/.*/ => preamble_line("Epoch")}
         ],
         summary => [
-            {qr/.*/ => sub(){
-                my ($summary) = @_;
-                return "Summary:        $summary\n";
-            }}
+            {qr/.*/ => preamble_line("Summary")}
         ],
         license => [
-            {qr/.*/ => sub(){
-                my ($license) = @_;
-                return "License:        $license\n";
-            }}
+            {qr/.*/ => preamble_line("License")}
         ],
         group => [
-            {qr/.*/ => sub(){
-                my ($group) = @_;
-                return "Group:          $group\n";
-            }}
+            {qr/.*/ => preamble_line("Group")}
         ],
         url => [
-            {qr/.*/ => sub(){
-                my ($url) = @_;
-                return "URL:            $url\n";
-            }}
+            {qr/.*/ => preamble_line("URL")}
         ],
         source => [
             {qr/.*/ => sub(){
                 my (@sources) = @_;
                 my $result = "";
                 for my $i (0 .. $#sources){
-                    $result = $result . "Source$i:        $sources[$i]\n";
+                    $result = $result . build_preamble_line("Source$i", $sources[$i]);
                 }
                 return $result;
             }}
         ],
         build_root => [
             {qr/.*/ => sub(){
-                return "BuildRoot:      \%{_tmppath}/\%{name}-\%{version}-\%{release}-root-\%(\%{__id_u} -n)\n";
+                return build_preamble_line("BuildRoot","\%{_tmppath}/\%{name}-\%{version}-\%{release}-root-\%(\%{__id_u} -n)");
             }}
+        ],
+        build_arch => [
+            {qr/.*/ => preamble_line("BuildArch")}
         ],      
     };
     return bless($self);
+}
+
+sub preamble_line(){
+    my ($key) = shift;
+
+    return sub(){
+        my $value = shift;
+        return build_preamble_line($key, $value);
+    };
+}
+
+sub build_preamble_line(){
+    my ($key, $value) = @_;
+    return sprintf "%-16s%s", $key, $value."\n";
 }
 
 sub print(){
@@ -1470,7 +1461,16 @@ sub get_desired_function(){
     
     foreach(@{$self->{$action_key}}){
          my ($key, $value) = each($_);
-         return $value if($dist =~ /$key/);
+         if($dist =~ /$key/){
+            if(ref($value) eq "CODE"){
+                return $value;
+            } else {
+                return sub(){
+                    return $value;
+                };
+            }
+         }
+         
     }
     
     die "Cannot locate appropriate method for \"$action_key\" in dist \"$dist\"\n";
