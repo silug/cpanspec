@@ -1094,7 +1094,7 @@ for my $file (@args) {
 
     $writer->print_name("$prefix$name");
     $writer->print_version($version);
-    $writer->print_release($release, $disttag);
+    $writer->print_release($release . $disttag);
     
     $writer->print_epoch($epoch) if(defined($epoch));
     
@@ -1117,22 +1117,17 @@ for my $file (@args) {
         delete $requires{perl};
     }
 
-    if (defined($build_requires{perl})) {
-        $build_requires{perl} =~ s/^[<>=]+ *//;
-        printf $spec "%-16s%s >= %s\n", "BuildRequires:", "perl",
-            (($build_requires{perl} lt "5.6.0" ? "0:" : "1:")
-            . $build_requires{perl}) if $build_requires{perl};
-        delete $build_requires{perl};
-    }
-
     for my $dep (keys(%requires)) {
         $build_requires{$dep}=$build_requires{$dep} || $requires{$dep};
     }
 
     for my $dep (sort(keys(%build_requires))) {
-        next if exists $dep_blacklist{$dep};
+        if (exists $dep_blacklist{$dep}){
+            delete $build_requires{$dep};
+            next;
+        }
         if (exists($corelist{$dep}) && $corelist{$dep} ge $build_requires{$dep}) {
-            next if (!$compat);
+            next if (!($spec_dist =~ /^old$/));
         } elsif ($follow) {
             if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
                 if (check_dep($dep)) {
@@ -1143,118 +1138,46 @@ for my $file (@args) {
                 }
             }
         }
-        printf $spec "%-16s%s", "BuildRequires:", "perl($dep)";
-        print $spec (" >= " . $build_requires{$dep})
-            if ($build_requires{$dep});
-        print $spec "\n";
     }
 
-    for my $dep (@add_buildrequires) {
-        printf $spec "%-16s%s\n", "BuildRequires:", $dep;
-    }
+    $writer->print_build_requires(\%build_requires, \@add_buildrequires);
 
     for my $dep (sort(keys(%requires))) {
-        next if (!$compat and exists($corelist{$dep}));
-        printf $spec "%-16s%s", "Requires:", "perl($dep)";
-        print $spec (" >= " . $requires{$dep}) if ($requires{$dep});
-        print $spec "\n";
+        if (!($spec_dist =~ /^old$/) and exists($corelist{$dep})){
+            delete $requires{$dep};
+        }
     }
 
-    for my $dep (@add_requires) {
-        printf $spec "%-16s%s\n", "Requires:", $dep;
-    }
+    $writer->print_requires(\%requires, \@add_requires);
 
-    if (!$compat) {
-        print $spec <<END;
-Requires:       perl(:MODULE_COMPAT_\%(eval "`\%{__perl} -V:version`"; echo \$version))
-END
-    }
+    $writer->print_provides(@add_provides);
 
-    for my $prov (@add_provides) {
-        printf $spec "%-16s%s\n", "Provides:", $prov;
-    }
+    # TODO: Figure out if these lines can be added to the "Source" array above.
 
     if (@filter_requires) {
-        print $spec <<END
-
-Source98:       $name-filter-requires.sh
-\%global real_perl_requires \%{__perl_requires}
-\%define __perl_requires \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-requires
-END
+        $writer->print_filter_requires($name);
     }
 
     if (@filter_provides) {
-        print $spec <<END
-
-Source99:       $name-filter-provides.sh
-\%global real_perl_provides \%{__perl_provides}
-\%define __perl_provides \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-provides
-END
+        $writer->print_filter_provides($name);
     }
 
     my $buildpath=$path;
     $buildpath=~s/$version/\%{version}/;
-    print $spec <<END;
+    
+    $writer->print("\n");
 
-\%description
-$description
+    $writer->print_description($description);
 
-\%prep
-\%setup -q@{[($noprefix ? "" : " -n $buildpath")]}
-END
-
-    if (@filter_requires) {
-        print $spec <<'END';
-
-sed -e 's,@@PERL_REQ@@,%{real_perl_requires},' %{SOURCE98} > %{__perl_requires}
-chmod +x %{__perl_requires}
-END
-    }
-
-    if (@filter_provides) {
-        print $spec <<'END';
-
-sed -e 's,@@PERL_PROV@@,%{real_perl_provides},' %{SOURCE99} > %{__perl_provides}
-chmod +x %{__perl_provides}
-END
-    }
+    my $remove_pm_to_blib = 0;
 
     if (grep { $_ eq "pm_to_blib" } @files) {
-        print $spec <<'END';
-
-rm -f pm_to_blib
-END
+        $remove_pm_to_blib = 1;
     }
 
-    print $spec <<END;
+    $writer->print_prep($noprefix, $buildpath, \@filter_requires, \@filter_provides, $remove_pm_to_blib);
 
-\%build
-END
-
-    if($uses_autoinstall) {
-        print $spec <<END
-export PERL_AUTOINSTALL="--skipdeps"
-END
-    }
-
-    if ($usebuildpl) {
-        print $spec <<END;
-\%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
-./Build
-END
-    } else {
-        print $spec <<END;
-\%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : qq{ OPTIMIZE="$macro{optimize}"}]}
-END
-
-        print $spec
-            "\%{__perl} -pi -e 's/^\\tLD_RUN_PATH=[^\\s]+\\s*/\\t/' Makefile\n"
-            if ($compat and !$noarch);
-
-        print $spec <<END;
-make \%{?_smp_mflags}
-END
-    }
+    $writer->print_build($uses_autoinstall, $usebuildpl, $noarch, $macro{optimize});
 
     print $spec <<END;
 
@@ -1415,9 +1338,186 @@ sub new(){
         ],
         build_arch => [
             {qr/.*/ => preamble_line("BuildArch")}
-        ],      
+        ],
+        build_requires => [
+            {qr/.*/ => sub(){
+                my ($build_requires, $add_buildrequires)  = @_;
+                
+                my $br = "BuildRequires";
+
+                my $result = "";
+
+                if (defined($build_requires->{perl})) {
+                    $build_requires->{perl} =~ s/^[<>=]+ *//;
+                    my $perl_version = (($build_requires->{perl} lt "5.6.0" ? "0:" : "1:")
+                                        . $build_requires->{perl}) if $build_requires->{perl};
+                    $result .= build_preamble_line($br,"perl >= $perl_version"); 
+                    delete $build_requires->{perl};
+                }
+
+                $result .= build_requirement_lines($br, $build_requires, $add_buildrequires);
+
+                return $result;
+
+            }}
+        ],
+        requires => [
+            {qr/^old$/ => sub(){
+                my ($requires, $add_requires) = @_;
+                return build_requirement_lines("Requires", $requires, $add_requires);
+            }},
+            {qr/.*/ => sub(){
+                my ($requires, $add_requires) = @_;
+
+                my $result = build_requirement_lines("Requires", $requires, $add_requires);
+                
+                $result .= build_preamble_line(
+                    "Requires", 
+                    "perl(:MODULE_COMPAT_\%(eval \"`\%{__perl} -V:version`\"; echo \$version))"
+                );
+                
+                return $result;
+            }}
+        ],
+        provides => [
+            {qr/.*/ => sub(){
+                my $result = "";
+                for my $prov (@_) {
+                    $result .= build_preamble_line("Provides", $prov);
+                }
+                return $result;   
+            }}
+        ],
+        filter_requires => [
+            {qr/.*/ => sub(){
+                my ($name) = @_;
+
+                return build_preamble_line(
+                    "Source98",
+                      "$name-filter-requires.sh\n"
+                    . "\%global real_perl_requires \%{__perl_requires}\n"
+                    . "\%define __perl_requires \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-requires\n"
+                );
+            }}
+        ],
+        filter_provides => [
+            {qr/.*/ => sub(){
+                my ($name) = @_;
+
+                return build_preamble_line(
+                    "Source99",
+                      "$name-filter-provides.sh\n"
+                    . "\%global real_perl_provides \%{__perl_provides}\n"
+                    . "\%define __perl_provides \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-provides\n"
+                );
+
+            }}
+        ],
+        description => [
+            {qr/.*/ => sub(){
+                my ($description) = @_;
+                return "\%description\n$description\n\n";
+            }}
+        ],
+        prep => [
+            {qr/.*/ => sub(){
+                my ($noprefix, $buildpath, $filter_requires, $filter_provides, $remove_pm_to_blib) = @_;
+
+                my $result = "";
+
+                my $setup = ($noprefix ? "" : " -n $buildpath");
+
+                $result .=  "\%prep\n"
+                          . "\%setup -q$setup\n"
+                          . "\n";
+                if(@{$filter_requires}){
+                    $result .=  "sed -e 's,\@\@PERL_REQ\@\@,\%{real_perl_requires},' \%{SOURCE98} > \%{__perl_requires}\n"
+                              . "chmod +x \%{__perl_requires}\n\n";
+                }
+
+                if(@{$filter_provides}){
+                    $result .=  "sed -e 's,\@\@PERL_PROV\@\@,\%{real_perl_provides},' \%{SOURCE99} > \%{__perl_provides}\n"
+                              . "chmod +x \%{__perl_provides}\n\n";   
+                }
+
+                if($remove_pm_to_blib){
+                    $result .= "rm -f pm_to_blib\n\n";
+                }
+                return $result;
+            }}
+        ],
+        build => [
+            {qr/^old$/ => sub(){
+                my ($uses_autoinstall, $usebuildpl, $noarch, $optimize_macro) = @_;
+                
+                my $result = "\%build\n";
+
+                if($uses_autoinstall){
+                    $result .= "export PERL_AUTOINSTALL=\"--skipdeps\"\n";
+                }
+
+                if($usebuildpl){
+                    my $optimize_string = ($noarch ? '' : qq{ optimize="$optimize_macro"});
+                    $result .= "\%{__perl} Build.PL installdirs=vendor$optimize_string\n"
+                             . "./Build\n";
+                } else {
+                    my $optimize_string = ($noarch ? '' : qq{ OPTIMIZE="$optimize_macro"});
+                    $result .= "\%{__perl} Makefile.PL INSTALLDIRS=vendor$optimize_string\n";
+                }
+                
+                if(!$noarch){
+                    $result .= "\%{__perl} -pi -e 's/^\\tLD_RUN_PATH=[^\\s]+\\s*/\\t/' Makefile\n";        
+                }
+
+                $result .= "make \%{?_smp_mflags}\n\n";
+                return $result;
+            }},
+            {qr/.*/ => sub(){
+                my ($uses_autoinstall, $usebuildpl, $noarch, $optimize_macro) = @_;
+                
+                my $result = "\%build\n";
+
+                if($uses_autoinstall){
+                    $result .= "export PERL_AUTOINSTALL=\"--skipdeps\"\n";
+                }
+
+                if($usebuildpl){
+                    my $optimize_string = ($noarch ? '' : qq{ optimize="$optimize_macro"});
+                    $result .= "\%{__perl} Build.PL installdirs=vendor$optimize_string\n"
+                             . "./Build\n";
+                } else {
+                    my $optimize_string = ($noarch ? '' : qq{ OPTIMIZE="$optimize_macro"});
+                    $result .= "\%{__perl} Makefile.PL INSTALLDIRS=vendor$optimize_string\n";
+                }
+
+                $result .= "make \%{?_smp_mflags}\n\n";
+                return $result;
+            }}
+        ]
     };
     return bless($self);
+}
+
+sub build_requirement_lines(){
+    my ($key, $perl_req_ref, $additions_ref) = @_;
+
+    my $result = "";
+
+    for my $dep (sort(keys(%{$perl_req_ref}))) {
+        my $requirement = "perl($dep)";
+
+        if($perl_req_ref->{$dep}){
+            $requirement .= " >= " . $perl_req_ref->{$dep};
+        }
+        
+        $result .= build_preamble_line($key, $requirement);
+    }
+
+    for my $dep (@{$additions_ref}) {
+        $result .= build_preamble_line($key, $dep);
+    }
+
+    return $result;
 }
 
 sub preamble_line(){
@@ -1431,25 +1531,22 @@ sub preamble_line(){
 
 sub build_preamble_line(){
     my ($key, $value) = @_;
-    return sprintf "%-16s%s", $key, $value."\n";
+    return sprintf "%-16s%s", $key.":", $value."\n";
 }
 
 sub print(){
     my $self = shift;
     my $spec = $self->{spec_file};
-    foreach (@_){
-        print $spec $_;
-    }
+    print $spec @_;
 }
 
 sub AUTOLOAD(){
     my $self = shift;
-    my $spec = $self->{spec_file};
     my $function_name = $SpecFileWriter::AUTOLOAD;
     $function_name =~ s/SpecFileWriter::print_//;
     my $some_function = $self->get_desired_function($function_name);
     my $result = $some_function->(@_);
-    print $spec "$result";
+    $self->print($result);
 }
 
 # By passing in the key of the desired function, the writer can determine which function
