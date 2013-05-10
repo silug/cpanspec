@@ -1208,9 +1208,9 @@ package SpecFileWriter;
 sub new(){
     my ($class, $spec_file, $dist) = @_;
     
-    # Each "section" of the spec file has an array of hashes.  Each hash is basically acting 
-    # like a tuple.  The key is a regular expression that matches the dist and the value is
-    # a function that will return a string that should be printed to the spec file.
+    # Each "section" of the spec file has an array of hashes.  The key is a regular expression 
+    # that matches the dist and the value is a function that will return a string that should 
+    # be printed to the spec file.
 
     # I realize that this could be a bit confusing.  The benefit here, is that adding support
     # for another dist is as easy as adding the methods below to write out all sections of the
