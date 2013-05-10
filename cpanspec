@@ -30,6 +30,7 @@ cpanget [options] [module [...]]
  Options:
    --help       -h      Help message
    --old        -o      Be more compatible with old RHL/FC releases
+   --spec-dist  -sd     Spec file compatibility distribution
    --perl-version   -P  Minimum perl version to support
    --license    -l      Include generated license texts if absent in source
    --noprefix   -n      Don't add perl- prefix to package name
@@ -247,6 +248,7 @@ our %opt;
 
 our $help=0;
 our $compat=0;
+our $spec_dist=0;
 our $perl_version=0;
 our $addlicense=0;
 our $noprefix=0;
@@ -565,6 +567,14 @@ sub which(@) {
     die("Cannot find " . join(" or ", @_));
 }
 
+sub get_default_dist(){
+    my $rpm = which("rpm");
+    my $result = `$rpm --eval %{dist}`;
+    $result =~ s/^\.//;
+    chomp($result);
+    return $result;
+}
+
 # Set locale to en_US.UTF8 so that dates in changelog will be correct
 # if using another locale. Also ensures writing out UTF8. (Thanks to
 # Roy-Magne Mo for pointing out the problem and providing a solution.)
@@ -573,6 +583,7 @@ setlocale(LC_ALL, "en_US.UTF-8");
 GetOptions(
         'help|h'            => \$help,
         'old|o'             => \$compat,
+        'spec-dist|sd=s'     => \$spec_dist,
         'perl-version|P=s'  => \$perl_version,
         'license|l'         => \$addlicense,
         'noprefix|n'        => \$noprefix,
@@ -599,6 +610,18 @@ GetOptions(
 
 pod2usage({ -exitval => 0, -verbose => 1 }) if ($help);
 pod2usage({ -exitval => 1, -verbose => 0 }) if (!@ARGV);
+
+if($compat and $spec_dist){
+    warn "You cannot use --old and --spec_dist together.\n"
+        ."We will target '$spec_dist'\n";
+    $compat=0;
+}
+
+if($compat){
+    $spec_dist = "old"; #This should explicitly set the dist that compat targets
+}
+
+$spec_dist = get_default_dist() if(!$spec_dist);
 
 if ($follow and $buildrpm) {
     warn "Sorry, --follow and --build are mutually exclusive right now.\n"
@@ -873,8 +896,9 @@ for my $file (@args) {
         next;
     }
 
-    print $spec qq[\%{!?perl_$vendorlib: \%define perl_$vendorlib \%(eval "\`\%{__perl} -V:install$vendorlib\`"; echo \$install$vendorlib)}\n\n]
-        if ($compat);
+    my $writer = SpecFileWriter->new($spec, $spec_dist);
+
+    $writer->print_prefix($vendorlib);
 
     my $license="";
 
@@ -1068,36 +1092,30 @@ for my $file (@args) {
         }
     }
 
-    print $spec <<END;
-Name:           $prefix$name
-Version:        $version
-Release:        $release$disttag
-END
+    $writer->print_name("$prefix$name");
+    $writer->print_version($version);
+    $writer->print_release($release . $disttag);
+    
+    $writer->print_epoch($epoch) if(defined($epoch));
+    
+    my @sources = ($source);
 
-    print $spec "Epoch:          $epoch\n" if (defined($epoch));
+    # TODO: I *think* it would make sense to add lines 1175 - 1190 to the sources array here
+    #       instead of listing them as Source98 and Source99.  I have a feeling they are 
+    #       not rolled together on purpose.
 
-    print $spec <<END;
-Summary:        $summary
-License:        $license
-Group:          Development/Libraries
-URL:            $url
-Source0:        $source
-BuildRoot:      \%{_tmppath}/\%{name}-\%{version}-\%{release}-root-\%(\%{__id_u} -n)
-END
+    $writer->print_summary($summary);
+    $writer->print_license($license);
+    $writer->print_group("Development/Libraries");
+    $writer->print_url($url);
+    $writer->print_source(@sources);
+    $writer->print_build_root();
 
-    printf $spec "%-16s%s\n", "BuildArch:", "noarch" if ($noarch);
+    $writer->print_build_arch("noarch") if ($noarch);
 
     if (defined($requires{perl})) {
         $build_requires{perl}=$build_requires{perl} || $requires{perl};
         delete $requires{perl};
-    }
-
-    if (defined($build_requires{perl})) {
-        $build_requires{perl} =~ s/^[<>=]+ *//;
-        printf $spec "%-16s%s >= %s\n", "BuildRequires:", "perl",
-            (($build_requires{perl} lt "5.6.0" ? "0:" : "1:")
-            . $build_requires{perl}) if $build_requires{perl};
-        delete $build_requires{perl};
     }
 
     for my $dep (keys(%requires)) {
@@ -1105,9 +1123,12 @@ END
     }
 
     for my $dep (sort(keys(%build_requires))) {
-        next if exists $dep_blacklist{$dep};
+        if (exists $dep_blacklist{$dep}){
+            delete $build_requires{$dep};
+            next;
+        }
         if (exists($corelist{$dep}) && $corelist{$dep} ge $build_requires{$dep}) {
-            next if (!$compat);
+            next if (!($spec_dist =~ /^old$/));
         } elsif ($follow) {
             if ($dep ne $module and !(grep { $_ eq $dep } @processed, @args)) {
                 if (check_dep($dep)) {
@@ -1118,205 +1139,476 @@ END
                 }
             }
         }
-        printf $spec "%-16s%s", "BuildRequires:", "perl($dep)";
-        print $spec (" >= " . $build_requires{$dep})
-            if ($build_requires{$dep});
-        print $spec "\n";
     }
 
-    for my $dep (@add_buildrequires) {
-        printf $spec "%-16s%s\n", "BuildRequires:", $dep;
-    }
+    $writer->print_build_requires(\%build_requires, \@add_buildrequires);
 
     for my $dep (sort(keys(%requires))) {
-        next if (!$compat and exists($corelist{$dep}));
-        printf $spec "%-16s%s", "Requires:", "perl($dep)";
-        print $spec (" >= " . $requires{$dep}) if ($requires{$dep});
-        print $spec "\n";
+        if (!($spec_dist =~ /^old$/) and exists($corelist{$dep})){
+            delete $requires{$dep};
+        }
     }
 
-    for my $dep (@add_requires) {
-        printf $spec "%-16s%s\n", "Requires:", $dep;
-    }
+    $writer->print_requires(\%requires, \@add_requires);
+    $writer->print_provides(@add_provides);
 
-    if (!$compat) {
-        print $spec <<END;
-Requires:       perl(:MODULE_COMPAT_\%(eval "`\%{__perl} -V:version`"; echo \$version))
-END
-    }
-
-    for my $prov (@add_provides) {
-        printf $spec "%-16s%s\n", "Provides:", $prov;
-    }
+    # TODO: Figure out if these lines can be added to the "Source" array above.
 
     if (@filter_requires) {
-        print $spec <<END
-
-Source98:       $name-filter-requires.sh
-\%global real_perl_requires \%{__perl_requires}
-\%define __perl_requires \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-requires
-END
+        $writer->print_filter_requires($name);
     }
 
     if (@filter_provides) {
-        print $spec <<END
-
-Source99:       $name-filter-provides.sh
-\%global real_perl_provides \%{__perl_provides}
-\%define __perl_provides \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-provides
-END
+        $writer->print_filter_provides($name);
     }
 
     my $buildpath=$path;
     $buildpath=~s/$version/\%{version}/;
-    print $spec <<END;
+    
+    $writer->print("\n");
 
-\%description
-$description
+    $writer->print_description($description);
 
-\%prep
-\%setup -q@{[($noprefix ? "" : " -n $buildpath")]}
-END
-
-    if (@filter_requires) {
-        print $spec <<'END';
-
-sed -e 's,@@PERL_REQ@@,%{real_perl_requires},' %{SOURCE98} > %{__perl_requires}
-chmod +x %{__perl_requires}
-END
-    }
-
-    if (@filter_provides) {
-        print $spec <<'END';
-
-sed -e 's,@@PERL_PROV@@,%{real_perl_provides},' %{SOURCE99} > %{__perl_provides}
-chmod +x %{__perl_provides}
-END
-    }
+    my $remove_pm_to_blib = 0;
 
     if (grep { $_ eq "pm_to_blib" } @files) {
-        print $spec <<'END';
-
-rm -f pm_to_blib
-END
+        $remove_pm_to_blib = 1;
     }
 
-    print $spec <<END;
-
-\%build
-END
-
-    if($uses_autoinstall) {
-        print $spec <<END
-export PERL_AUTOINSTALL="--skipdeps"
-END
-    }
-
-    if ($usebuildpl) {
-        print $spec <<END;
-\%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
-./Build
-END
-    } else {
-        print $spec <<END;
-\%{__perl} Makefile.PL INSTALLDIRS=vendor@{[$noarch ? '' : qq{ OPTIMIZE="$macro{optimize}"}]}
-END
-
-        print $spec
-            "\%{__perl} -pi -e 's/^\\tLD_RUN_PATH=[^\\s]+\\s*/\\t/' Makefile\n"
-            if ($compat and !$noarch);
-
-        print $spec <<END;
-make \%{?_smp_mflags}
-END
-    }
-
-    print $spec <<END;
-
-\%install
-rm -rf $macro{buildroot}
-
-END
-
-    if ($usebuildpl) {
-        print $spec
-            "./Build install destdir=$macro{buildroot} create_packlist=0\n";
-    } else {
-        print $spec <<END;
-make pure_install PERL_INSTALL_ROOT=$macro{buildroot}
-
-find $macro{buildroot} -type f -name .packlist -exec rm -f {} \\;
-END
-    }
-
-    if (!$noarch) {
-        print $spec <<END;
-find $macro{buildroot} -type f -name '*.bs' -size 0 -exec rm -f {} \\;
-END
-}
-
-    print $spec <<END;
-find $macro{buildroot} -depth -type d -exec rmdir {} 2>/dev/null \\;
-
-\%{_fixperms} $macro{buildroot}/*
-
-END
+    $writer->print_prep($noprefix, $buildpath, \@filter_requires, \@filter_provides, $remove_pm_to_blib);
+    $writer->print_build($uses_autoinstall, $usebuildpl, $noarch, $macro{optimize});
+    $writer->print_install($usebuildpl, $noarch, $addlicense, $macro{buildroot}, \@doc);
 
     if ($addlicense and !grep /copying|artistic|copyright|license/i, @doc) {
-        print $spec <<END;
-perldoc -t perlgpl > COPYING
-perldoc -t perlartistic > Artistic
-
-END
-
         push(@doc, "COPYING", "Artistic");
     }
 
-    print $spec <<END;
-\%check@{[($compat ? ' || :' : '')]}
-END
-    if ($usebuildpl) {
-        print $spec "./Build test\n";
-    } else {
-        print $spec "make test\n";
-    }
+    $writer->print_check($usebuildpl);
+    $writer->print_clean($macro{buildroot}, \@filter_requires, \@filter_provides);
+    $writer->print_files(\@doc, $scripts, $noarch, $lib, $module);
+    $writer->print_changelog($date, $packager, $version, $release, $NAME, $VERSION);
 
-    print $spec <<END;
-
-\%clean
-rm -rf $macro{buildroot}@{[
-    (@filter_requires ? ' %{__perl_requires}' : '') .
-    (@filter_provides ? ' %{__perl_provides}' : '')]}
-
-\%files
-\%defattr(-,root,root,-)
-\%doc @doc
-END
-
-    if ($scripts) {
-        print $spec "\%{_bindir}/*\n";
-        print $spec "\%{_mandir}/man1/*\n";
-    }
-
-    if ($noarch) {
-        print $spec "$lib/*\n";
-    } else {
-        print $spec "$lib/auto/*\n$lib/" . (split /::/, $module)[0] . "*\n";
-    }
-
-    print $spec <<END;
-\%{_mandir}/man3/*
-
-\%changelog
-* $date $packager $version-$release
-- Specfile autogenerated by $NAME $VERSION.
-END
-
-    $spec->close();
+    $writer->close();
 
     build_rpm($specfile) if ($buildsrpm or $buildrpm);
 
     push(@processed, $module);
 }
+
+
+# #######################################################################
+# SpecFileWriter
+# 
+# An attempt to support spec file writing for multiple versions of rpm.
+#
+# #######################################################################
+
+package SpecFileWriter;
+
+sub new(){
+    my ($class, $spec_file, $dist) = @_;
+    
+    # Each "section" of the spec file has an array of hashes.  The key is a regular expression 
+    # that matches the dist and the value is a function that will return a string that should 
+    # be printed to the spec file.
+
+    # I realize that this could be a bit confusing.  The benefit here, is that adding support
+    # for another dist is as easy as adding the methods below to write out all sections of the
+    # file that need to be treated differently.
+    my $self = {
+        spec_file => $spec_file,
+        dist => $dist,
+        prefix => [
+            {qr/^old$/ => sub(){
+                my ($vendorlib) = @_; 
+                return qq[\%{!?perl_$vendorlib: \%define perl_$vendorlib \%(eval "\`\%{__perl} -V:install$vendorlib\`"; echo \$install$vendorlib)}\n\n];
+            }},
+            {qr/.*/ => "" }
+        ],
+        name => [
+            {qr/.*/ => preamble_line("Name")}
+        ],
+        version => [
+            {qr/.*/ => preamble_line("Version")}
+        ],
+        release => [
+            {qr/.*/ => preamble_line("Release")}
+        ],
+        epoch => [
+            {qr/.*/ => preamble_line("Epoch")}
+        ],
+        summary => [
+            {qr/.*/ => preamble_line("Summary")}
+        ],
+        license => [
+            {qr/.*/ => preamble_line("License")}
+        ],
+        group => [
+            {qr/.*/ => preamble_line("Group")}
+        ],
+        url => [
+            {qr/.*/ => preamble_line("URL")}
+        ],
+        source => [
+            {qr/.*/ => sub(){
+                my (@sources) = @_;
+                my $result = "";
+                for my $i (0 .. $#sources){
+                    $result = $result . build_preamble_line("Source$i", $sources[$i]);
+                }
+                return $result;
+            }}
+        ],
+        build_root => [
+            {qr/.*/ => sub(){
+                return build_preamble_line("BuildRoot","\%{_tmppath}/\%{name}-\%{version}-\%{release}-root-\%(\%{__id_u} -n)");
+            }}
+        ],
+        build_arch => [
+            {qr/.*/ => preamble_line("BuildArch")}
+        ],
+        build_requires => [
+            {qr/.*/ => sub(){
+                my ($build_requires, $add_buildrequires)  = @_;
+                
+                my $br = "BuildRequires";
+
+                my $result = "";
+
+                if (defined($build_requires->{perl})) {
+                    $build_requires->{perl} =~ s/^[<>=]+ *//;
+                    my $perl_version = (($build_requires->{perl} lt "5.6.0" ? "0:" : "1:")
+                                        . $build_requires->{perl}) if $build_requires->{perl};
+                    $result .= build_preamble_line($br,"perl >= $perl_version"); 
+                    delete $build_requires->{perl};
+                }
+
+                $result .= build_requirement_lines($br, $build_requires, $add_buildrequires);
+
+                return $result;
+
+            }}
+        ],
+        requires => [
+            {qr/^old$/ => sub(){
+                my ($requires, $add_requires) = @_;
+                return build_requirement_lines("Requires", $requires, $add_requires);
+            }},
+            {qr/.*/ => sub(){
+                my ($requires, $add_requires) = @_;
+
+                my $result = build_requirement_lines("Requires", $requires, $add_requires);
+                
+                $result .= build_preamble_line(
+                    "Requires", 
+                    "perl(:MODULE_COMPAT_\%(eval \"`\%{__perl} -V:version`\"; echo \$version))"
+                );
+                
+                return $result;
+            }}
+        ],
+        provides => [
+            {qr/.*/ => sub(){
+                my $result = "";
+                for my $prov (@_) {
+                    $result .= build_preamble_line("Provides", $prov);
+                }
+                return $result;   
+            }}
+        ],
+        filter_requires => [
+            {qr/.*/ => sub(){
+                my ($name) = @_;
+
+                return build_preamble_line(
+                    "Source98",
+                      "$name-filter-requires.sh\n"
+                    . "\%global real_perl_requires \%{__perl_requires}\n"
+                    . "\%define __perl_requires \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-requires\n"
+                );
+            }}
+        ],
+        filter_provides => [
+            {qr/.*/ => sub(){
+                my ($name) = @_;
+
+                return build_preamble_line(
+                    "Source99",
+                      "$name-filter-provides.sh\n"
+                    . "\%global real_perl_provides \%{__perl_provides}\n"
+                    . "\%define __perl_provides \%{_tmppath}/\%{name}-\%{version}-\%{release}-\%(\%{__id_u} -n)-filter-provides\n"
+                );
+
+            }}
+        ],
+        description => [
+            {qr/.*/ => sub(){
+                my ($description) = @_;
+                return "\%description\n$description\n\n";
+            }}
+        ],
+        prep => [
+            {qr/.*/ => sub(){
+                my ($noprefix, $buildpath, $filter_requires, $filter_provides, $remove_pm_to_blib) = @_;
+
+                my $result = "";
+
+                my $setup = ($noprefix ? "" : " -n $buildpath");
+
+                $result .=  "\%prep\n"
+                          . "\%setup -q$setup\n"
+                          . "\n";
+                if(@{$filter_requires}){
+                    $result .=  "sed -e 's,\@\@PERL_REQ\@\@,\%{real_perl_requires},' \%{SOURCE98} > \%{__perl_requires}\n"
+                              . "chmod +x \%{__perl_requires}\n\n";
+                }
+
+                if(@{$filter_provides}){
+                    $result .=  "sed -e 's,\@\@PERL_PROV\@\@,\%{real_perl_provides},' \%{SOURCE99} > \%{__perl_provides}\n"
+                              . "chmod +x \%{__perl_provides}\n\n";   
+                }
+
+                if($remove_pm_to_blib){
+                    $result .= "rm -f pm_to_blib\n\n";
+                }
+                return $result;
+            }}
+        ],
+        build => [
+            {qr/^old$/ => sub(){
+                my ($uses_autoinstall, $usebuildpl, $noarch, $optimize_macro) = @_;
+                
+                my $result = "\%build\n";
+
+                if($uses_autoinstall){
+                    $result .= "export PERL_AUTOINSTALL=\"--skipdeps\"\n";
+                }
+
+                if($usebuildpl){
+                    my $optimize_string = ($noarch ? '' : qq{ optimize="$optimize_macro"});
+                    $result .= "\%{__perl} Build.PL installdirs=vendor$optimize_string\n"
+                             . "./Build\n";
+                } else {
+                    my $optimize_string = ($noarch ? '' : qq{ OPTIMIZE="$optimize_macro"});
+                    
+                    $result .= "\%{__perl} Makefile.PL INSTALLDIRS=vendor$optimize_string\n";
+                    
+                    if(!$noarch){
+                        $result .= "\%{__perl} -pi -e 's/^\\tLD_RUN_PATH=[^\\s]+\\s*/\\t/' Makefile\n";        
+                    }
+                    
+                    $result .= "make \%{?_smp_mflags}\n";
+                }
+
+                return $result . "\n";
+            }},
+            {qr/.*/ => sub(){
+                my ($uses_autoinstall, $usebuildpl, $noarch, $optimize_macro) = @_;
+                
+                my $result = "\%build\n";
+
+                if($uses_autoinstall){
+                    $result .= "export PERL_AUTOINSTALL=\"--skipdeps\"\n";
+                }
+
+                if($usebuildpl){
+                    my $optimize_string = ($noarch ? '' : qq{ optimize="$optimize_macro"});
+                    $result .= "\%{__perl} Build.PL installdirs=vendor$optimize_string\n"
+                             . "./Build\n";
+                } else {
+                    my $optimize_string = ($noarch ? '' : qq{ OPTIMIZE="$optimize_macro"});
+                    $result .= "\%{__perl} Makefile.PL INSTALLDIRS=vendor$optimize_string\n";
+                    $result .= "make \%{?_smp_mflags}\n";
+                }
+
+                return $result . "\n";
+            }}
+        ],
+        install => [
+            {qr/.*/ => sub(){
+                my ($usebuildpl, $noarch, $addlicense, $buildroot_macro, $doc) = @_;
+                
+                my $result = "\%install\nrm -rf $buildroot_macro\n\n";
+
+                if ($usebuildpl) {
+                    $result .= "./Build install destdir=$buildroot_macro create_packlist=0\n";
+                } else {
+                    $result .= "\nmake pure_install PERL_INSTALL_ROOT=$macro{buildroot}\n";
+                    $result .= "find $buildroot_macro -type f -name .packlist -exec rm -f {} \\;\n";
+                }
+
+                if (!$noarch) {
+                    $result .= "find $buildroot_macro -type f -name '*.bs' -size 0 -exec rm -f {} \\;\n";
+                }
+
+                $result .= "find $buildroot_macro -depth -type d -exec rmdir {} 2>/dev/null \\;\n\n";
+                $result .= "\%{_fixperms} $buildroot_macro/*\n\n";
+
+                if ($addlicense and !grep /copying|artistic|copyright|license/i, @{$doc}) {
+                    $result .= "perldoc -t perlgpl > COPYING\n";
+                    $result .= "perldoc -t perlartistic > Artistic\n\n";
+                }
+
+                return $result;    
+            }}
+        ],
+        check => [
+            {qr/^old$/ => sub(){
+                my ($usebuildpl) = @_;
+                
+                my $result = "\%check || :\n";
+                
+                if ($usebuildpl) {
+                    $result .= "./Build test\n";
+                } else {
+                    $result .= "make test\n";
+                }
+
+                return $result . "\n";
+            }},
+            {qr/.*/ => sub(){
+                my ($usebuildpl) = @_;
+                
+                my $result = "\%check\n";
+                
+                if ($usebuildpl) {
+                    $result .= "./Build test\n";
+                } else {
+                    $result .= "make test\n";
+                }
+
+                return $result . "\n";
+            }}
+        ],
+        clean => [
+            {qr/.*/ => sub(){
+                my ($buildroot_macro, $filter_requires, $filter_provides) = @_;
+                
+                my $clean_text = "rm -rf $buildroot_macro";
+                $clean_text .= " %{__perl_requires}" if (@{$filter_requires});
+                $clean_text .= " %{__perl_provides}" if (@{$filter_provides}); 
+
+                return "\%clean\n" . $clean_text . "\n\n";
+            }}
+        ],
+        files => [
+            {qr/.*/ => sub(){
+                my ($doc, $scripts, $noarch, $lib, $module) = @_;
+                my $result = "\%files\n\%defattr(-,root,root,-)\n";
+
+                $result .= "\%doc @{$doc}\n";
+                
+                if ($scripts) {
+                    $result .= "\%{_bindir}/*\n";
+                    $result .= "\%{_mandir}/man1/*\n";
+                }
+
+                if ($noarch) {
+                    $result .= "$lib/*\n";
+                } else {
+                    $result .= "$lib/auto/*\n$lib/" . (split /::/, $module)[0] . "*\n";
+                }
+
+                $result .= "\%{_mandir}/man3/*\n\n";
+
+                return $result;
+            }}
+        ],
+        changelog => [
+            {qr/.*/ => sub(){
+                my ($date, $packager, $version, $release, $scriptName, $scriptVersion) = @_;
+                my $result = "\%changelog\n";
+                $result .= "* $date $packager $version-$release\n";
+                $result .= "- Specfile autogenerated by $scriptName $scriptVersion.\n";
+            }}
+        ]
+    };
+    return bless($self);
+}
+
+sub build_requirement_lines(){
+    my ($key, $perl_req_ref, $additions_ref) = @_;
+
+    my $result = "";
+
+    for my $dep (sort(keys(%{$perl_req_ref}))) {
+        my $requirement = "perl($dep)";
+
+        if($perl_req_ref->{$dep}){
+            $requirement .= " >= " . $perl_req_ref->{$dep};
+        }
+        
+        $result .= build_preamble_line($key, $requirement);
+    }
+
+    for my $dep (@{$additions_ref}) {
+        $result .= build_preamble_line($key, $dep);
+    }
+
+    return $result;
+}
+
+sub preamble_line(){
+    my ($key) = shift;
+
+    return sub(){
+        my $value = shift;
+        return build_preamble_line($key, $value);
+    };
+}
+
+sub build_preamble_line(){
+    my ($key, $value) = @_;
+    return sprintf "%-16s%s", $key.":", $value."\n";
+}
+
+sub print(){
+    my $self = shift;
+    my $spec = $self->{spec_file};
+    print $spec @_;
+}
+
+sub close(){
+    my $self = shift;
+    my $spec = $self->{spec_file};
+    $spec->close();
+}
+
+sub AUTOLOAD(){
+    my $self = shift;
+    my $function_name = $SpecFileWriter::AUTOLOAD;
+    $function_name =~ s/SpecFileWriter::print_//;
+    my $some_function = $self->get_desired_function($function_name);
+    my $result = $some_function->(@_);
+    $self->print($result);
+}
+
+# By passing in the key of the desired function, the writer can determine which function
+# supports the dist.  The first match wins, so /.*/ should always be last.
+sub get_desired_function(){
+    my ($self, $action_key) = @_;
+    
+    my $dist = $self->{dist};
+    
+    foreach(@{$self->{$action_key}}){
+         my ($key, $value) = each($_);
+         if($dist =~ /$key/){
+            if(ref($value) eq "CODE"){
+                return $value;
+            } else {
+                return sub(){
+                    return $value;
+                };
+            }
+         }
+         
+    }
+    
+    die "Cannot locate appropriate method for \"$action_key\" in dist \"$dist\"\n";
+
+}
+
+# Have to create a DESTROY function when you have an AUTOLOAD.
+sub DESTROY(){ }
 
 # vi: set ai et:
