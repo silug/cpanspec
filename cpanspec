@@ -1214,7 +1214,7 @@ END
 
     if ($usebuildpl) {
         print $spec <<END;
-\%{__perl} Build.PL installdirs=vendor@{[$noarch ? '' : qq{ optimize="$macro{optimize}"} ]}
+\%{__perl} Build.PL --installdirs=vendor@{[$noarch ? '' : qq{ --optimize="$macro{optimize}"} ]}
 ./Build
 END
     } else {
@@ -1240,7 +1240,7 @@ END
 
     if ($usebuildpl) {
         print $spec
-            "./Build install destdir=$macro{buildroot} create_packlist=0\n";
+            "./Build install --destdir=$macro{buildroot} --create_packlist=0\n";
     } else {
         print $spec <<END;
 make pure_install PERL_INSTALL_ROOT=$macro{buildroot}
