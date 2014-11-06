@@ -823,6 +823,7 @@ for my $file (@args) {
         }
         die "Failed to create $script: $!\n" if (!$sh);
 
+        map { s/\//\\\//g } @filter_requires;
         print $sh "#!/bin/sh\n\n"
             . "\@\@PERL_REQ\@\@ \"\$\@\" | sed -e '/^$filter_requires[0]\$/d'";
         if (@filter_requires > 1) {
@@ -845,6 +846,7 @@ for my $file (@args) {
         }
         die "Failed to create $script: $!\n" if (!$sh);
 
+        map { s/\//\\\//g } @filter_provides;
         print $sh "#!/bin/sh\n\n"
             . "\@\@PERL_PROV\@\@ \"\$\@\" | sed -e '/^$filter_provides[0]\$/d'";
         if (@filter_provides > 1) {
