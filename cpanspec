@@ -783,14 +783,14 @@ for my $file (@args) {
 
     my @doc=sort { $a cmp $b } grep {
                 !/\//
-            and !/\.(pl|xs|h|c|pm|in|pod|cfg|inl)$/i
+            and !/\.(pl|xs|h|c|pm|ini?|pod|cfg|inl)$/i
             and !/^\./
             and $_ ne $path
             and $_ ne "MANIFEST"
             and $_ ne "MANIFEST.SKIP"
             and $_ ne "INSTALL"
             and $_ ne "SIGNATURE"
-            and $_ ne "META.yml"
+            and !/^META\..+$/i
             and $_ ne "NINJA"
             and $_ ne "configure"
             and $_ ne "config.guess"
