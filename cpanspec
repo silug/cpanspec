@@ -537,10 +537,17 @@ sub check_rpm($) {
 sub check_repo($) {
     my $dep=shift;
 
-    my $repoquery=which("repoquery");
+    my ($repoquery, $repoqueryopts);
+    if (-x ($repoquery = which('dnf'))) {
+        $repoqueryopts = "whatprovides '${dep}'"
+    } elsif (-x ($repoquery = which('repoquery'))) {
+        $repoqueryopts = "--whatprovides '${dep}'"
+    } else {
+        return undef
+    }
 
     verbose("Running $repoquery to check for $dep.  This may take a while...");
-    my @out=`$repoquery --whatprovides "$dep"`;
+    my @out=`$repoquery $repoqueryopts 2>/dev/null`;
 
     if ($? != 0) {
         #warn "backtick (repoquery) failed with return value $?";
