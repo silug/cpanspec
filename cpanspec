@@ -757,7 +757,7 @@ for my $file (@args) {
         next;
     }
 
-    my $url="http://search.cpan.org/dist/$name/";
+    my $url="https://metacpan.org/release/$name/";
 
     $source=$source || "http://www.cpan.org/modules/by-module/"
         . ($module=~/::/ ? (split "::", $module)[0] : (split "-", $name)[0])
